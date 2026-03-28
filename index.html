@@ -121,154 +121,12 @@ const ORDER_STATUS  = ["In Progress", "Ready for Dispatch", "Dispatched", "Retur
 
 // ── DATA ─────────────────────────────────────────────────────────
 const initialData = {
-  inventory: [
-    { id: 1, sourcedOn: "04/02/2025", item: "Broad lace, Neck lines, Flower Patch", vendor: "Lala Lace House", description: "9 mtrs lace, 3 Neck lines, 4 Flower patch", purpose: "HOE Exhibit - March", amount: 5040, orderedBy: "Ritvik", bill: "LALA.pdf" },
-    { id: 2, sourcedOn: "06/02/2025", item: "Raw silk, Rayon", vendor: "Balaji Fabric", description: "Raw silk dye 40mtr, Lining 30 mtr", purpose: "HOE Exhibit - March", amount: "", orderedBy: "Ritvik", bill: "" },
-    { id: 3, sourcedOn: "08/02/2025", item: "Japan Satin Fabric", vendor: "The Wardrobe Fabrics", description: "Ombre dyed satin 100 mtr, 2 Colors", purpose: "HOE Exhibit - March", amount: 13850, orderedBy: "Ritvik", bill: "Invoice_1034.pdf" },
-    { id: 4, sourcedOn: "27/02/2025", item: "Raw silk lining, Net", vendor: "Balaji Fabric", description: "Raw silk lining 8 mtr, Net 15 mtr", purpose: "HOE Customer", amount: "", orderedBy: "Ritvik", bill: "" },
-    { id: 5, sourcedOn: "04/02/2025", item: "Organza, Brocade, Dola silk, Viscose organza", vendor: "Balaji Fabric", description: "Organza 2.5mtr, Dola silk 1mtr, Viscose organza 5 mtr, Brocade 6 mtr", purpose: "HOE Customer", amount: 2470, orderedBy: "Priyanka", bill: "" },
-    { id: 6, sourcedOn: "04/03/2025", item: "Linen fabric", vendor: "Balaji Fabric", description: "Black linen 2 mtr", purpose: "Anubhavi garment", amount: 500, orderedBy: "Anubhavi", bill: "" },
-    { id: 7, sourcedOn: "04/10/2025", item: "Raw silk, Lining", vendor: "Balaji Fabric", description: "Raw silk 7 mtr, Lining 2 mtr", purpose: "HOE And FD", amount: 560, orderedBy: "Ritvik", bill: "" },
-    { id: 8, sourcedOn: "05/09/2025", item: "Satin", vendor: "Balaji Fabric", description: "30 mtr satin dye", purpose: "FD Flag", amount: 1800, orderedBy: "", bill: "" },
-    { id: 9, sourcedOn: "05/19/2025", item: "Cotton cambridge", vendor: "Balaji Fabric", description: "17 Mtr purple, 17 mtr blue all dye", purpose: "HOE", amount: 2040, orderedBy: "", bill: "" },
-    { id: 10, sourcedOn: "06/04/2025", item: "Raw silk, White georgette", vendor: "Balaji Fabric", description: "Raw silk 17+6 mtr dye, Georgette 10 mtr", purpose: "HOE", amount: 1997, orderedBy: "", bill: "" },
-    { id: 11, sourcedOn: "06/11/2025", item: "Organza, Satin lycra", vendor: "Balaji Fabric", description: "Organza 5mtr, Satin 5 mtr, Tissue silk 3mtr, Crushed Tissue 5mtr", purpose: "HOE", amount: 625, orderedBy: "", bill: "" },
-    { id: 12, sourcedOn: "06/21/2025", item: "Raw silk, Cotton cambridge", vendor: "Balaji Fabric", description: "Raw silk 9mtr, Cotton Cambridge 6mtr", purpose: "HOE", amount: 1125, orderedBy: "", bill: "" },
-    { id: 13, sourcedOn: "09/04/2025", item: "Cotton Cambridge, Georgette, Denim, Taffeta", vendor: "Balaji Fabric", description: "32+7+12+8+8 Mtr mixed fabrics", purpose: "HOE And Creations", amount: 5090, orderedBy: "", bill: "" },
-    { id: 14, sourcedOn: "09/18/2025", item: "Lace", vendor: "Gian Chand Jain", description: "3 Rolls", purpose: "HOE", amount: 1890, orderedBy: "Ritvik", bill: "" },
-    { id: 15, sourcedOn: "27/10/2025", item: "Patch", vendor: "Basira Collection", description: "23 patch", purpose: "HOE", amount: 8900, orderedBy: "Ritvik", bill: "" },
-    { id: 16, sourcedOn: "27/10/2025", item: "Gota lace", vendor: "K.S Jariwala", description: "15 rolls", purpose: "HOE", amount: 4883, orderedBy: "Ritvik", bill: "" },
-    { id: 17, sourcedOn: "27/10/2025", item: "Neck line, Lace", vendor: "M & H Collection", description: "21 total", purpose: "HOE", amount: 6930, orderedBy: "Ritvik", bill: "" },
-    { id: 18, sourcedOn: "27/10/2025", item: "Lace", vendor: "Gian Chand", description: "30 mtr", purpose: "HOE", amount: 23950, orderedBy: "Ritvik", bill: "" },
-    { id: 19, sourcedOn: "07/11/2025", item: "Kali, Net", vendor: "Balaji Fabric", description: "416 kali, 35 mtr", purpose: "HOE", amount: 45150, orderedBy: "", bill: "" },
-    { id: 20, sourcedOn: "10/01/2026", item: "Mirror lace, Kiran lace, Broad lace", vendor: "Gian Chand", description: "Multiple pieces", purpose: "HOE Exhibit & Custom", amount: 7119, orderedBy: "Prateek", bill: "" },
-    { id: 21, sourcedOn: "07/03/2026", item: "Jaipuri georgette, Poly georgette, Cambric, Crepe, Taffeta, Cosmo", vendor: "Balaji Fabric", description: "8+6+7.5+15.5+4+4.5+25 mtr", purpose: "HOE", amount: 8328, orderedBy: "", bill: "" },
-  ],
-  fabricStock: [
-    { id: 1, fabricType: "Plan Net", fabricName: "Yellow", orderQty: "24", leftover: "12", lastUpdated: "05/02/2025" },
-    { id: 2, fabricType: "Plan Net", fabricName: "Lemon Yellow", orderQty: "24", leftover: "12", lastUpdated: "05/02/2025" },
-    { id: 3, fabricType: "Plan Net", fabricName: "Sky Blue", orderQty: "3", leftover: "3", lastUpdated: "05/02/2025" },
-    { id: 4, fabricType: "Plan Net", fabricName: "Light Brown", orderQty: "12", leftover: "2", lastUpdated: "05/02/2025" },
-    { id: 5, fabricType: "Plan Net", fabricName: "Brown", orderQty: "15", leftover: "9", lastUpdated: "05/02/2025" },
-    { id: 6, fabricType: "Plan Net", fabricName: "Navy Blue", orderQty: "10", leftover: "10", lastUpdated: "05/02/2025" },
-    { id: 7, fabricType: "Plan Net", fabricName: "Pink Shine", orderQty: "12", leftover: "12", lastUpdated: "05/02/2025" },
-    { id: 8, fabricType: "Plan Net", fabricName: "Light Peach", orderQty: "10", leftover: "10", lastUpdated: "05/02/2025" },
-    { id: 9, fabricType: "Organza", fabricName: "White", orderQty: "20", leftover: "14", lastUpdated: "07/02/2025" },
-    { id: 10, fabricType: "Organza", fabricName: "Sequene", orderQty: "", leftover: "1", lastUpdated: "07/02/2025" },
-    { id: 11, fabricType: "Kali", fabricName: "Banarasi Brocade", orderQty: "60", leftover: "36", lastUpdated: "05/02/2025" },
-    { id: 12, fabricType: "Kali", fabricName: "Luckhnowi Work", orderQty: "44", leftover: "22", lastUpdated: "05/02/2025" },
-    { id: 13, fabricType: "Kali", fabricName: "Mirror Work", orderQty: "50", leftover: "3", lastUpdated: "05/02/2025" },
-    { id: 14, fabricType: "Georgette", fabricName: "White Sequene", orderQty: "5", leftover: "5", lastUpdated: "05/02/2025" },
-    { id: 15, fabricType: "Georgette", fabricName: "Plane Dye Able", orderQty: "", leftover: "2", lastUpdated: "05/02/2025" },
-    { id: 16, fabricType: "Crepe", fabricName: "White", orderQty: "6", leftover: "6", lastUpdated: "05/02/2025" },
-    { id: 17, fabricType: "Cosmo", fabricName: "Multi Thread Work", orderQty: "5", leftover: "5", lastUpdated: "05/02/2025" },
-    { id: 18, fabricType: "Surat — Linen", fabricName: "Linen", orderQty: "200", leftover: "13", lastUpdated: "" },
-    { id: 19, fabricType: "Surat — Raw Silk", fabricName: "Pink", orderQty: "300", leftover: "58", lastUpdated: "" },
-    { id: 20, fabricType: "Surat — Raw Silk", fabricName: "Mehroon", orderQty: "", leftover: "21", lastUpdated: "" },
-    { id: 21, fabricType: "Surat — Georgette", fabricName: "Georgette", orderQty: "100", leftover: "36", lastUpdated: "" },
-    { id: 22, fabricType: "Surat — Satin (Modal Silk)", fabricName: "Modal Silk", orderQty: "100", leftover: "30", lastUpdated: "" },
-    { id: 23, fabricType: "Surat — Organza", fabricName: "Organza", orderQty: "100", leftover: "36", lastUpdated: "" },
-    { id: 24, fabricType: "Surat — Cotton Blend", fabricName: "Cotton Blend", orderQty: "100", leftover: "13", lastUpdated: "" },
-  ],
-  customOrders: [
-    { id: 1,  customer: "Vreshti Mehta",  garment: "Brown Mirror Anarkali with Dupatta",  size: "M",          fabricSegments: [{fabric:"Net",mtrs:"12"},{fabric:"Lining",mtrs:"4"}], remark: "Alteration", dispatch: "", lastUpdated: "15/01/2026", status: "In Progress" },
-    { id: 2,  customer: "Vansikha",        garment: "Blue Short Kurti, Plazzo with Dupatta", size: "Customized", fabricSegments: [{fabric:"Main fabric",mtrs:"5.5"},{fabric:"Lining",mtrs:"5.5"}], remark: "Alteration", dispatch: "", lastUpdated: "15/01/2026", status: "In Progress" },
-    { id: 3,  customer: "Rupali Nawal",    garment: "Jaashna Suit",                        size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"18"},{fabric:"Lucknowi",mtrs:"1"},{fabric:"Georgette",mtrs:"1"},{fabric:"Lining",mtrs:"5"}], remark: "Returned — redelivered 29th Jan", dispatch: "24/01/2026", lastUpdated: "30/01/2026", status: "Dispatched" },
-    { id: 4,  customer: "Roma",            garment: "Candy",                               size: "Customized", fabricSegments: [{fabric:"Tafta",mtrs:"12"},{fabric:"Lining",mtrs:"6"}], remark: "", dispatch: "02/02/2026", lastUpdated: "03/02/2026", status: "Dispatched" },
-    { id: 5,  customer: "Sakashi",         garment: "Jashna Anarkali in Yellow",           size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"20"},{fabric:"Lining",mtrs:"6"},{fabric:"Georgette",mtrs:"1"},{fabric:"Luchknowi",mtrs:"1"}], remark: "", dispatch: "04/02/2026", lastUpdated: "04/02/2026", status: "Dispatched" },
-    { id: 6,  customer: "Mahimaa",         garment: "Drape Saree + Lavender Lengha + Pink Dupatta", size: "Customized", fabricSegments: [{fabric:"",mtrs:""}], remark: "", dispatch: "03/02/2026", lastUpdated: "04/02/2026", status: "Dispatched" },
-    { id: 7,  customer: "Sima",            garment: "Orange Red Drape Skirt and Blouse",  size: "Customized", fabricSegments: [{fabric:"Skirt",mtrs:"4"},{fabric:"Blouse",mtrs:"1"},{fabric:"Pallu",mtrs:"3"}], remark: "", dispatch: "04/02/2026", lastUpdated: "07/02/2026", status: "Dispatched" },
-    { id: 8,  customer: "Sonali",          garment: "Kali Shrug with Skirt + Petrol Blue Anarkali", size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"24"},{fabric:"Georgette",mtrs:"4"},{fabric:"Lining",mtrs:"5"},{fabric:"Dupatta",mtrs:"3"}], remark: "Returned for fit — resent corrected", dispatch: "09/02/2026", lastUpdated: "12/02/2026", status: "Dispatched" },
-    { id: 9,  customer: "Garima Darda",    garment: "Jashna in Pink",                     size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"20"},{fabric:"Luchkonwi",mtrs:"1"},{fabric:"Georgette",mtrs:"1"},{fabric:"Lining",mtrs:"6"}], remark: "", dispatch: "09/02/2026", lastUpdated: "12/02/2026", status: "Dispatched" },
-    { id: 10, customer: "Indira",          garment: "Black Blouse + Pink Blouse with Saree", size: "Customized", fabricSegments: [{fabric:"Main x2",mtrs:"2"},{fabric:"Lining x2",mtrs:"2"}], remark: "By Porter", dispatch: "11/02/2026", lastUpdated: "12/02/2026", status: "Dispatched" },
-    { id: 11, customer: "Anuja",           garment: "Blue Mermaid Skirt, Halter Top with Dupatta", size: "Customized", fabricSegments: [{fabric:"Embroidered",mtrs:"4"},{fabric:"Plain",mtrs:"4"},{fabric:"Dupatta + Lining",mtrs:"8"}], remark: "", dispatch: "19/02/2026", lastUpdated: "", status: "In Progress" },
-    { id: 12, customer: "Pooja Sirayat",   garment: "Red Drape Skirt + Blue Sequin Gown + Purple Lengha + Baby Pink Drape Saree", size: "Customized", fabricSegments: [{fabric:"Crepe",mtrs:"6"},{fabric:"Red Sequin",mtrs:"1"},{fabric:"Net",mtrs:"4"},{fabric:"Lining",mtrs:"6"}], remark: "", dispatch: "19/02/2026", lastUpdated: "", status: "In Progress" },
-  ],
-  leads: [
-    { id: 1, name: "Yashika", contact: "7982403154", status: "" },
-    { id: 2, name: "Mehak", contact: "7058548482", status: "Contact karugi" },
-    { id: 3, name: "Simi", contact: "7410154535", status: "No" },
-    { id: 4, name: "Mahima", contact: "8383965736", status: "Asked for price" },
-    { id: 5, name: "Reshma", contact: "9960960274", status: "" },
-    { id: 6, name: "Sunita Sahu", contact: "7008940743", status: "No response" },
-    { id: 7, name: "Anita", contact: "9826471819", status: "" },
-    { id: 8, name: "HOE Client", contact: "9340536398", status: "No response" },
-    { id: 9, name: "Sanskruti", contact: "7385560644", status: "Events date postponed" },
-    { id: 10, name: "Unknown", contact: "9136536577", status: "Pricing issue" },
-    { id: 11, name: "Shradha Jadhav", contact: "8669533578", status: "Order done" },
-    { id: 12, name: "Supriya Sharma", contact: "7295823923", status: "No response" },
-    { id: 13, name: "Tulika", contact: "8595799453", status: "" },
-    { id: 14, name: "Kuljeet Jain", contact: "7000126643", status: "No response" },
-    { id: 15, name: "Aditi Pandey", contact: "9555768878", status: "" },
-    { id: 16, name: "Kashvi", contact: "9591874422", status: "Still in touch but order NC" },
-    { id: 17, name: "Priyanka International", contact: "61469869572", status: "Still in touch but order NC" },
-    { id: 18, name: "Anuja", contact: "8390652804", status: "Order done" },
-    { id: 19, name: "Anshu", contact: "8558910158", status: "Not received revert" },
-    { id: 20, name: "Manisha", contact: "9149159358", status: "Will send reference image" },
-    { id: 21, name: "Chirag", contact: "7042728654", status: "Msg sent" },
-    { id: 22, name: "Nikita Sharma", contact: "9883710790", status: "Msg sent" },
-  ],
-  outfitStock: [
-    { id: 1,  type: "Anarkali",           design: "Petrol Blue Kali Suit with Dupatta",      sizes: "M, L",         totalProduced: 6,  sold: 5,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 2,  type: "Anarkali",           design: "Brown Mirror with Dupatta",                sizes: "M, L",         totalProduced: 3,  sold: 1,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 3,  type: "Anarkali",           design: "White Gota Patti Suit (Sufi)",             sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 4,  type: "Anarkali",           design: "Jashna Suit",                              sizes: "Customized",   totalProduced: 18, sold: 18, available: 0, lastUpdated: "11/03/2026", remarks: "Sold out" },
-    { id: 5,  type: "Anarkali",           design: "Cosmo Suit with Work Jacket",              sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 6,  type: "Kaftan",             design: "Summer Print",                             sizes: "Free Size",    totalProduced: 5,  sold: 3,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 7,  type: "Kaftan",             design: "Cosmo with Pants",                         sizes: "Free Size, S/M/L", totalProduced: 8, sold: 5, available: 3, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 8,  type: "Kaftan",             design: "Holi Kaftan Set",                          sizes: "Free Size, S/M/L", totalProduced: 3, sold: 0, available: 3, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 9,  type: "Short Kurti Sharara",design: "Gota Patti Sharara with Dupatta (Sufi)",   sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 10, type: "Short Kurti Sharara",design: "Work Kurta Plain Georgette Sharara",       sizes: "M, L",         totalProduced: 3,  sold: 1,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 11, type: "Short Kurti Plazzo", design: "Blue Short Kurti Plazzo with Dupatta",     sizes: "M",            totalProduced: 3,  sold: 2,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 12, type: "Short Kurti Plazzo", design: "Purple Shabya Lace Plazzo Kurti",          sizes: "M, L",         totalProduced: 3,  sold: 0,  available: 3, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 13, type: "Saree with Blouse",  design: "Organza Saree with Blouse",                sizes: "M",            totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 14, type: "Saree with Blouse",  design: "Banarasi Saree with Blouse Piece",         sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 15, type: "Saree with Blouse",  design: "Drape Saree with Corset Blouse",           sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 16, type: "Dresses",            design: "Barbie",                                   sizes: "M, L",         totalProduced: 15, sold: 13, available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 17, type: "Dresses",            design: "Candy",                                    sizes: "M, L",         totalProduced: 15, sold: 15, available: 0, lastUpdated: "11/03/2026", remarks: "Sold out" },
-    { id: 18, type: "Dresses",            design: "Luchnowi Dress",                           sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 19, type: "Dresses",            design: "Summer Dress",                             sizes: "M, L",         totalProduced: 4,  sold: 2,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 20, type: "Jumpsuit",           design: "Brocade Green",                            sizes: "M, L",         totalProduced: 5,  sold: 3,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 21, type: "Jumpsuit",           design: "Brocade Peach",                            sizes: "M",            totalProduced: 5,  sold: 4,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 22, type: "Jumpsuit",           design: "Brocade Blue",                             sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 23, type: "Lengha",             design: "Vine Velvet Lengha with Dupatta",          sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 24, type: "Lengha",             design: "White Luchnowi Lengha",                    sizes: "M",            totalProduced: 1,  sold: 0,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
-    { id: 25, type: "Kali Shrug",         design: "Kali Shrug with Skirt",                   sizes: "M, L",         totalProduced: 4,  sold: 4,  available: 0, lastUpdated: "11/03/2026", remarks: "1 New incoming" },
-    { id: 26, type: "Mens Wear",          design: "Ombre Kurta",                              sizes: "M, L",         totalProduced: 6,  sold: 4,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
-  ],
-  exhibitNeeds: [
-    { id: 1,  category: "Marketing",  item: "Scholarship upto 30%",   qty: "78",  status: "Not Ready" },
-    { id: 2,  category: "Marketing",  item: "Visiting Card",           qty: "110", status: "Not Ready" },
-    { id: 3,  category: "Marketing",  item: "Cashback Coupon",         qty: "8",   status: "Not Ready" },
-    { id: 4,  category: "Marketing",  item: "Upto 10% Off Coupon",     qty: "30",  status: "Not Ready" },
-    { id: 5,  category: "Marketing",  item: "Thank You Card",          qty: "15",  status: "Not Ready" },
-    { id: 6,  category: "Marketing",  item: "Template Book",           qty: "",    status: "Not Ready" },
-    { id: 7,  category: "Marketing",  item: "Look Book",               qty: "",    status: "Not Ready" },
-    { id: 8,  category: "Marketing",  item: "Awareness Reel",          qty: "",    status: "Not Ready" },
-    { id: 9,  category: "Marketing",  item: "Skill in a Box",          qty: "38",  status: "Not Ready" },
-    { id: 10, category: "Decoration", item: "Jute Thread",             qty: "",    status: "Not Ready" },
-    { id: 11, category: "Decoration", item: "Laces",                   qty: "",    status: "Not Ready" },
-    { id: 12, category: "Decoration", item: "Hand Print Cloth",        qty: "",    status: "Not Ready" },
-    { id: 13, category: "Decoration", item: "Fairy Lights",            qty: "",    status: "Not Ready" },
-    { id: 14, category: "Decoration", item: "Name Board",              qty: "",    status: "Not Ready" },
-    { id: 15, category: "Decoration", item: "Body Form (Baby)",        qty: "",    status: "Not Ready" },
-    { id: 16, category: "Decoration", item: "Collection Motifs",       qty: "",    status: "Not Ready" },
-    { id: 17, category: "Tools",      item: "Hangers",                 qty: "60",  status: "Not Ready" },
-    { id: 18, category: "Tools",      item: "HOE Bags",                qty: "30",  status: "Not Ready" },
-    { id: 19, category: "Tools",      item: "Pearl Pins",              qty: "",    status: "Not Ready" },
-    { id: 20, category: "Tools",      item: "Cloth Clip",              qty: "",    status: "Not Ready" },
-    { id: 21, category: "Tools",      item: "Stimmer",                 qty: "",    status: "Not Ready" },
-    { id: 22, category: "Tools",      item: "Fabric Glue",             qty: "",    status: "Not Ready" },
-    { id: 23, category: "Tools",      item: "Safety Pins",             qty: "",    status: "Not Ready" },
-    { id: 24, category: "Tools",      item: "Thread",                  qty: "",    status: "Not Ready" },
-    { id: 25, category: "Tools",      item: "Scissor",                 qty: "",    status: "Not Ready" },
-    { id: 26, category: "Tools",      item: "Measuring Tape",          qty: "",    status: "Not Ready" },
-    { id: 27, category: "Tools",      item: "Cello Tape",              qty: "",    status: "Not Ready" },
-    { id: 28, category: "Tools",      item: "Stapler and Pins",        qty: "",    status: "Not Ready" },
-    { id: 29, category: "Tools",      item: "QR Machine",              qty: "",    status: "Not Ready" },
-    { id: 30, category: "Tools",      item: "Shade Card",              qty: "",    status: "Not Ready" },
-    { id: 31, category: "Tools",      item: "Invoice",                 qty: "45",  status: "Not Ready" },
-  ],
+  inventory:    [],
+  fabricStock:  [],
+  customOrders: [],
+  leads:        [],
+  outfitStock:  [],
+  exhibitNeeds: [],
 };
 
 // Firebase db accessed via window.db (initialized below babel)
@@ -277,7 +135,7 @@ const initialData = {
 function useFirebaseData(key, initial) {
   const [data, setData] = useState(() => {
     // Always seed from localStorage first for instant render
-    try { const s = localStorage.getItem("hoe_v4_" + key); return s ? JSON.parse(s) : initial; }
+    try { const s = localStorage.getItem("hoe_v5_" + key); return s ? JSON.parse(s) : initial; }
     catch { return initial; }
   });
   const [ready, setReady] = useState(!window.firebaseReady); // if no firebase, instantly ready
@@ -287,13 +145,13 @@ function useFirebaseData(key, initial) {
       setReady(true);
       return;
     }
-    const ref = window.db.ref("hoe/" + key);
+    const ref = window.db.ref("hoe_v2/" + key);
     const handler = ref.on("value", snap => {
       const val = snap.val();
       if (val !== null && val !== undefined) {
         const arr = Array.isArray(val) ? val : Object.values(val);
         setData(arr);
-        try { localStorage.setItem("hoe_v4_" + key, JSON.stringify(arr)); } catch {}
+        try { localStorage.setItem("hoe_v5_" + key, JSON.stringify(arr)); } catch {}
       } else {
         ref.set(initial);
       }
@@ -305,8 +163,8 @@ function useFirebaseData(key, initial) {
   const update = valOrFn => {
     setData(prev => {
       const next = typeof valOrFn === "function" ? valOrFn(prev) : valOrFn;
-      try { localStorage.setItem("hoe_v4_" + key, JSON.stringify(next)); } catch {}
-      if (window.firebaseReady && window.db) window.db.ref("hoe/" + key).set(next);
+      try { localStorage.setItem("hoe_v5_" + key, JSON.stringify(next)); } catch {}
+      if (window.firebaseReady && window.db) window.db.ref("hoe_v2/" + key).set(next);
       return next;
     });
   };
@@ -316,18 +174,18 @@ function useFirebaseData(key, initial) {
 
 function useFirebaseList(key, initial) {
   const [data, setData] = useState(() => {
-    try { const s = localStorage.getItem("hoe_meta_" + key); return s ? JSON.parse(s) : initial; }
+    try { const s = localStorage.getItem("hoe_meta2_" + key); return s ? JSON.parse(s) : initial; }
     catch { return initial; }
   });
 
   useEffect(() => {
     if (!window.firebaseReady || !window.db) return;
-    const ref = window.db.ref("hoe_meta/" + key);
+    const ref = window.db.ref("hoe_meta_v2/" + key);
     const handler = ref.on("value", snap => {
       const val = snap.val();
       if (val !== null && Array.isArray(val)) {
         setData(val);
-        try { localStorage.setItem("hoe_meta_" + key, JSON.stringify(val)); } catch {}
+        try { localStorage.setItem("hoe_meta2_" + key, JSON.stringify(val)); } catch {}
       } else if (val === null) {
         ref.set(initial);
       }
@@ -337,8 +195,8 @@ function useFirebaseList(key, initial) {
 
   const update = next => {
     setData(next);
-    try { localStorage.setItem("hoe_meta_" + key, JSON.stringify(next)); } catch {}
-    if (window.firebaseReady && window.db) window.db.ref("hoe_meta/" + key).set(next);
+    try { localStorage.setItem("hoe_meta2_" + key, JSON.stringify(next)); } catch {}
+    if (window.firebaseReady && window.db) window.db.ref("hoe_meta_v2/" + key).set(next);
   };
 
   return [data, update];
