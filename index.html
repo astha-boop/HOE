@@ -62,7 +62,7 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
-const TABS = ["Inventory", "Fabric Stock", "Custom Orders", "Leads", "Outfit Stock", "Exhibit Needs"];
+const TABS = ["Inventory", "Fabric Stock", "Custom Orders", "Leads", "Outfit Stock", "Exhibit Needs", "🗑 Trash"];
 
 // ── PALETTE ──────────────────────────────────────────────────────
 const C = {
@@ -715,6 +715,7 @@ function HOEDashboard({ user, onSignOut }) {
   const [leads,        setLeads,        r4] = useFirebaseData("leads",        initialData.leads);
   const [outfitStock,  setOutfitStock,  r5] = useFirebaseData("outfitStock",  initialData.outfitStock);
   const [exhibitNeeds, setExhibitNeeds, r6] = useFirebaseData("exhibitNeeds", initialData.exhibitNeeds);
+  const [trash,        setTrash,        r7] = useFirebaseData("trash",        []);
 
   const [vendors,     setVendors]     = useFirebaseList("vendors",     ["Balaji Fabric","Lala Lace House","The Wardrobe Fabrics","Gian Chand Jain","Gian Chand","Basira Collection","K.S Jariwala","M & H Collection"]);
   const [purposes,    setPurposes]    = useFirebaseList("purposes",    ["HOE","HOE Exhibit - March","HOE Exhibit & Custom","HOE Customer","HOE And FD","HOE And Creations","FD Flag","Anubhavi garment"]);
@@ -723,7 +724,7 @@ function HOEDashboard({ user, onSignOut }) {
   const [exhibitCats, setExhibitCats] = useFirebaseList("exhibitCats", ["Marketing","Decoration","Tools"]);
   const [outfitCats,  setOutfitCats]  = useFirebaseList("outfitCats",  ["Anarkali","Kaftan","Short Kurti Sharara","Short Kurti Plazzo","Saree with Blouse","Dresses","Jumpsuit","Lengha","Kali Shrug","Mens Wear"]);
 
-  const allReady = r1 && r2 && r3 && r4 && r5 && r6;
+  const allReady = r1 && r2 && r3 && r4 && r5 && r6 && r7;
   useEffect(() => { setSyncStatus(allReady ? "live" : "connecting"); }, [allReady]);
 
   // wrap setters to show "saving" flash
@@ -733,15 +734,34 @@ function HOEDashboard({ user, onSignOut }) {
     setTimeout(() => setSyncStatus("live"), 900);
   };
 
-  const sInv  = withSync(setInventory);
-  const sFab  = withSync(setFabricStock);
-  const sCust = withSync(setCustomOrders);
-  const sLead = withSync(setLeads);
-  const sOut  = withSync(setOutfitStock);
-  const sExh  = withSync(setExhibitNeeds);
+  const sInv   = withSync(setInventory);
+  const sFab   = withSync(setFabricStock);
+  const sCust  = withSync(setCustomOrders);
+  const sLead  = withSync(setLeads);
+  const sOut   = withSync(setOutfitStock);
+  const sExh   = withSync(setExhibitNeeds);
+  const sTrash = withSync(setTrash);
 
   const upd = (list, set, id, f, v) => set(list.map(r => r.id === id ? { ...r, [f]: v } : r));
-  const del = (list, set, id) => set(list.filter(r => r.id !== id));
+  const del = (list, set, id, tabName) => {
+    const item = list.find(r => r.id === id);
+    if (item) {
+      const trashItem = { ...item, _trashId: Date.now(), _fromTab: tabName, _deletedAt: new Date().toLocaleString("en-IN", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }) };
+      sTrash(prev => [...(prev || []), trashItem]);
+    }
+    set(list.filter(r => r.id !== id));
+  };
+  const restore = (trashItem) => {
+    const { _trashId, _fromTab, _deletedAt, ...item } = trashItem;
+    const setterMap = { "Inventory": sInv, "Fabric Stock": sFab, "Custom Orders": sCust, "Leads": sLead, "Outfit Stock": sOut, "Exhibit Needs": sExh };
+    const setter = setterMap[_fromTab];
+    const listMap = { "Inventory": inventory, "Fabric Stock": fabricStock, "Custom Orders": customOrders, "Leads": leads, "Outfit Stock": outfitStock, "Exhibit Needs": exhibitNeeds };
+    const list = listMap[_fromTab] || [];
+    if (setter) setter([...list, item]);
+    sTrash(prev => prev.filter(t => t._trashId !== _trashId));
+  };
+  const permDelete = (trashId) => sTrash(prev => prev.filter(t => t._trashId !== trashId));
+  const emptyTrash = () => sTrash([]);
   const add = (list, set, tpl) => set([...list, { ...tpl, id: list.length ? Math.max(...list.map(r => r.id)) + 1 : 1 }]);
   const filt = arr => !search ? arr : arr.filter(r => JSON.stringify(r).toLowerCase().includes(search.toLowerCase()));
 
@@ -834,8 +854,14 @@ function HOEDashboard({ user, onSignOut }) {
               letterSpacing: 1.8, textTransform: "uppercase", fontWeight: activeTab === t ? 600 : 400,
               color: activeTab === t ? C.accent : C.textMuted,
               borderBottom: activeTab === t ? `2px solid ${C.accent}` : "2px solid transparent",
-              whiteSpace: "nowrap", flexShrink: 0 }}>
+              whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
             {t}
+            {t === "🗑 Trash" && trash.length > 0 && (
+              <span style={{ background: C.red, color: "#fff", borderRadius: 10, fontSize: "0.6rem",
+                padding: "1px 6px", fontWeight: 700, letterSpacing: 0 }}>
+                {trash.length}
+              </span>
+            )}
           </button>
         ))}
         <div style={{ flex: 1 }} />
@@ -893,7 +919,7 @@ function HOEDashboard({ user, onSignOut }) {
                   <TD mono accent><EditCell value={r.amount} onChange={v => upd(inventory,sInv,r.id,"amount",v)} type="number" mono /></TD>
                   <td style={tdS}><DropdownCell value={r.orderedBy} onChange={v => upd(inventory,sInv,r.id,"orderedBy",v)} options={orderers} onAddOption={v => setOrderers(p => [...p, v])} onRemoveOption={v => setOrderers(p => p.filter(x => x !== v))} placeholder="person" /></td>
                   <td style={tdS}><BillCell value={r.bill} onChange={v => upd(inventory,sInv,r.id,"bill",v)} /></td>
-                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(inventory,sInv,r.id)} /></td>
+                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(inventory,sInv,r.id,"Inventory")} /></td>
                 </tr>
               ))}
             </tbody>
@@ -929,7 +955,7 @@ function HOEDashboard({ user, onSignOut }) {
                     <td style={tdS}><MtrCell value={r.orderQty} onChange={v => upd(fabricStock,sFab,r.id,"orderQty",v)} dim /></td>
                     <td style={tdS}><MtrCell value={r.leftover} onChange={v => upd(fabricStock,sFab,r.id,"leftover",v)} /></td>
                     <td style={tdS}><DateCell value={r.lastUpdated} onChange={v => upd(fabricStock,sFab,r.id,"lastUpdated",v)} /></td>
-                    <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(fabricStock,sFab,r.id)} /></td>
+                    <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(fabricStock,sFab,r.id,"Fabric Stock")} /></td>
                   </tr>
                 );
               })}
@@ -963,7 +989,7 @@ function HOEDashboard({ user, onSignOut }) {
                     const ts = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
                     sCust(prev => prev.map(row => row.id === id ? { ...row, ...updates, lastUpdated: ts } : row));
                   }}
-                  onDelete={() => del(customOrders, sCust, r.id)}
+                  onDelete={() => del(customOrders,sCust,r.id,"Custom Orders")}
                 />
               ))}
             </tbody>
@@ -993,7 +1019,7 @@ function HOEDashboard({ user, onSignOut }) {
                   <TD accent><EditCell value={r.name} onChange={v => upd(leads,sLead,r.id,"name",v)} /></TD>
                   <TD mono><EditCell value={r.contact} onChange={v => upd(leads,sLead,r.id,"contact",v)} mono /></TD>
                   <td style={tdS}><StatusPill value={r.status || ""} onChange={v => upd(leads,sLead,r.id,"status",v)} options={LEAD_STATUS} /></td>
-                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(leads,sLead,r.id)} /></td>
+                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(leads,sLead,r.id,"Leads")} /></td>
                 </tr>
               ))}
             </tbody>
@@ -1041,7 +1067,7 @@ function HOEDashboard({ user, onSignOut }) {
                     </td>
                     <TD><EditCell value={r.lastUpdated} onChange={v => upd(outfitStock,sOut,r.id,"lastUpdated",v)} /></TD>
                     <TD muted mw={150}><EditCell value={r.remarks} onChange={v => upd(outfitStock,sOut,r.id,"remarks",v)} /></TD>
-                    <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(outfitStock,sOut,r.id)} /></td>
+                    <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(outfitStock,sOut,r.id,"Outfit Stock")} /></td>
                   </tr>
                 );
               })}
@@ -1091,12 +1117,85 @@ function HOEDashboard({ user, onSignOut }) {
                   <TD><EditCell value={r.item} onChange={v => upd(exhibitNeeds,sExh,r.id,"item",v)} /></TD>
                   <TD mono><EditCell value={r.qty} onChange={v => upd(exhibitNeeds,sExh,r.id,"qty",v)} mono /></TD>
                   <td style={tdS}><StatusPill value={r.status} onChange={v => upd(exhibitNeeds,sExh,r.id,"status",v)} options={EXHIBIT_STATUS} /></td>
-                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(exhibitNeeds,sExh,r.id)} /></td>
+                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(exhibitNeeds,sExh,r.id,"Exhibit Needs")} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
           <AddBtn onClick={() => add(exhibitNeeds,sExh,{category:"Tools",item:"",qty:"",status:"Not Ready"})} label="Add Item" />
+        </>}
+
+        {/* TRASH */}
+        {activeTab === "🗑 Trash" && <>
+          <SectionTitle>TRASH</SectionTitle>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ fontSize: "0.78rem", color: C.textMuted, fontFamily: "'DM Sans',sans-serif" }}>
+              {trash.length === 0 ? "Trash is empty." : `${trash.length} item${trash.length > 1 ? "s" : ""} in trash — restore or permanently delete.`}
+            </div>
+            {trash.length > 0 && (
+              <button onClick={emptyTrash}
+                style={{ padding: "6px 16px", background: "rgba(192,57,43,0.1)", border: "1px solid rgba(192,57,43,0.3)",
+                  color: C.red, borderRadius: 6, fontSize: "0.72rem", fontFamily: "'DM Sans',sans-serif",
+                  fontWeight: 600, cursor: "pointer" }}>
+                🗑 Empty Trash
+              </button>
+            )}
+          </div>
+          {trash.length > 0 && (
+            <table style={tblStyle}>
+              <thead><tr>
+                <TH w={36}>#</TH>
+                <TH>From</TH>
+                <TH>Item Preview</TH>
+                <TH>Deleted At</TH>
+                <TH w={160}>Actions</TH>
+              </tr></thead>
+              <tbody>
+                {[...trash].reverse().map((r, i) => {
+                  // build a readable preview of the item
+                  const preview = r.item || r.customer || r.name || r.design || r.fabricName || r.garment || r.description || "—";
+                  return (
+                    <tr key={r._trashId} className="hoe-row">
+                      <TD muted><span style={{ fontSize: "0.7rem" }}>{i+1}</span></TD>
+                      <td style={tdS}>
+                        <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 20, fontSize: "0.68rem",
+                          background: C.accentFaint, color: C.accent, border: `1px solid ${C.border}`,
+                          fontFamily: "'DM Sans',sans-serif", fontWeight: 500, whiteSpace: "nowrap" }}>
+                          {r._fromTab}
+                        </span>
+                      </td>
+                      <TD mw={340}>
+                        <span style={{ fontSize: "0.82rem", color: C.textMid }}>{preview}</span>
+                        {r.vendor && <span style={{ fontSize: "0.72rem", color: C.textMuted, display: "block" }}>{r.vendor}</span>}
+                        {r.status && <span style={{ fontSize: "0.72rem", color: C.textMuted, display: "block" }}>Status: {r.status}</span>}
+                      </TD>
+                      <TD muted style={{ fontSize: "0.72rem", fontFamily: "monospace", whiteSpace: "nowrap" }}>
+                        {r._deletedAt}
+                      </TD>
+                      <td style={{ ...tdS, verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <button onClick={() => restore(r)}
+                            style={{ padding: "5px 12px", background: "rgba(46,139,87,0.1)",
+                              border: "1px solid rgba(46,139,87,0.3)", color: C.green,
+                              borderRadius: 6, fontSize: "0.68rem", fontFamily: "'DM Sans',sans-serif",
+                              fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                            ↩ Restore
+                          </button>
+                          <button onClick={() => permDelete(r._trashId)}
+                            style={{ padding: "5px 12px", background: "rgba(192,57,43,0.08)",
+                              border: "1px solid rgba(192,57,43,0.25)", color: C.red,
+                              borderRadius: 6, fontSize: "0.68rem", fontFamily: "'DM Sans',sans-serif",
+                              fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </>}
 
         {/* FOOTER */}
