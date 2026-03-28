@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>House of Entreprenaari — Atelier Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f5f0f0; font-family: 'DM Sans', sans-serif; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #ede4e4; }
+  ::-webkit-scrollbar-thumb { background: #c47070; border-radius: 4px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .hoe-row:hover { background: #fff5f5 !important; }
+  .tab-btn { transition: all 0.2s; border: none; background: transparent; cursor: pointer; }
+  .tab-btn:hover { color: #8B1515 !important; }
+  input:focus, select:focus { outline: none; }
+  .add-btn { transition: all 0.2s; cursor: pointer; }
+  .add-btn:hover { background: #fdeaea !important; color: #8B1515 !important; border-color: #c47070 !important; }
+  .del-btn { transition: color 0.15s; }
+  .del-btn:hover { color: #c0392b !important; }
+  .kpi-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,21,21,0.18) !important; }
+  .save-btn { transition: all 0.2s; cursor: pointer; }
+  .save-btn:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  (function() {
+    try {
+      var firebaseConfig = {
+        apiKey: "AIzaSyAJncLEkZwdsk5_w_msyrE4wZpZP9fOMr8",
+        authDomain: "skillinabox-63ad8.firebaseapp.com",
+        databaseURL: "https://skillinabox-63ad8-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "skillinabox-63ad8",
+        storageBucket: "skillinabox-63ad8.firebasestorage.app",
+        messagingSenderId: "609328568989",
+        appId: "1:609328568989:web:2c9c99e31de369a0de9274"
+      };
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      window.db   = firebase.database();
+      window.auth = firebase.auth();
+      window.firebaseReady = true;
+      console.log("Firebase + Auth initialized OK");
+    } catch(e) {
+      console.warn("Firebase unavailable:", e.message);
+      window.db   = null;
+      window.auth = null;
+      window.firebaseReady = false;
+    }
+  })();
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const TABS = ["Inventory", "Fabric Stock", "Custom Orders", "Leads", "Outfit Stock", "Exhibit Needs"];
+
+// ── PALETTE ──────────────────────────────────────────────────────
+const C = {
+  bg: "#f5f0f0",
+  surface: "#fffcfc",
+  surfaceAlt: "#fdf5f5",
+  border: "#ecddd8",
+  borderStrong: "#dcc8c4",
+  accent: "#8B1515",
+  accentLight: "#c47070",
+  accentFaint: "rgba(139,21,21,0.07)",
+  text: "#1e1414",
+  textMid: "#5a3030",
+  textMuted: "#9e7070",
+  textLight: "#c8a0a0",
+  red: "#c0392b",
+  redFaint: "rgba(192,57,43,0.1)",
+  green: "#2e8b57",
+  greenFaint: "rgba(46,139,87,0.1)",
+  blue: "#3a7fc1",
+  blueFaint: "rgba(58,127,193,0.1)",
+  gold: "#a0722a",
+  goldFaint: "rgba(160,114,42,0.1)",
+  purple: "#7b4f9e",
+  purpleFaint: "rgba(123,79,158,0.1)",
+  sage: "#6a8f7a",
+  sageFaint: "rgba(106,143,122,0.1)",
+};
+
+const STATUS_COLORS = {
+  "Order done":    { bg: C.greenFaint, color: C.green,  border: "rgba(39,174,96,0.3)" },
+  "Dispatched":   { bg: C.greenFaint, color: C.green,  border: "rgba(39,174,96,0.3)" },
+  "Ready":        { bg: C.greenFaint, color: C.green,  border: "rgba(39,174,96,0.3)" },
+  "Collected":    { bg: C.greenFaint, color: "#1a9e50", border: "rgba(26,158,80,0.3)" },
+  "No response":  { bg: C.redFaint,   color: C.red,    border: "rgba(192,57,43,0.3)" },
+  "No":           { bg: C.redFaint,   color: C.red,    border: "rgba(192,57,43,0.3)" },
+  "Returned":     { bg: C.redFaint,   color: C.red,    border: "rgba(192,57,43,0.3)" },
+  "Not Ready":    { bg: C.redFaint,   color: C.red,    border: "rgba(192,57,43,0.3)" },
+  "In Progress":  { bg: C.blueFaint,  color: C.blue,   border: "rgba(41,128,185,0.3)" },
+  "Ordered":      { bg: C.purpleFaint,color: C.purple, border: "rgba(142,68,173,0.3)" },
+  "Ready for Dispatch": { bg: C.greenFaint, color: "#1a9e50", border: "rgba(26,158,80,0.3)" },
+  "Still in touch but order NC": { bg: C.goldFaint, color: C.gold, border: "rgba(184,134,11,0.3)" },
+  "Alteration":   { bg: C.goldFaint,  color: C.gold,   border: "rgba(184,134,11,0.3)" },
+  "Pricing issue":{ bg: C.goldFaint,  color: C.gold,   border: "rgba(184,134,11,0.3)" },
+  "Msg sent":     { bg: C.blueFaint,  color: C.blue,   border: "rgba(41,128,185,0.3)" },
+  "Asked for price": { bg: C.purpleFaint, color: C.purple, border: "rgba(142,68,173,0.3)" },
+  "Contact karugi":{ bg: C.blueFaint, color: C.blue,   border: "rgba(41,128,185,0.3)" },
+  "Events date postponed": { bg: C.goldFaint, color: C.gold, border: "rgba(184,134,11,0.3)" },
+  "Will send reference image": { bg: C.goldFaint, color: C.gold, border: "rgba(184,134,11,0.3)" },
+  "Not received revert": { bg: C.redFaint, color: C.red, border: "rgba(192,57,43,0.3)" },
+};
+
+const LEAD_STATUS   = ["", "Order done", "Asked for price", "No response", "Pricing issue", "Msg sent", "Still in touch but order NC", "Contact karugi", "Events date postponed", "Will send reference image", "No", "Not received revert"];
+const EXHIBIT_STATUS = ["Not Ready", "Ordered", "Ready", "Collected"];
+const ORDER_STATUS  = ["In Progress", "Ready for Dispatch", "Dispatched", "Returned", "Alteration"];
+
+// ── DATA ─────────────────────────────────────────────────────────
+const initialData = {
+  inventory: [
+    { id: 1, sourcedOn: "04/02/2025", item: "Broad lace, Neck lines, Flower Patch", vendor: "Lala Lace House", description: "9 mtrs lace, 3 Neck lines, 4 Flower patch", purpose: "HOE Exhibit - March", amount: 5040, orderedBy: "Ritvik", bill: "LALA.pdf" },
+    { id: 2, sourcedOn: "06/02/2025", item: "Raw silk, Rayon", vendor: "Balaji Fabric", description: "Raw silk dye 40mtr, Lining 30 mtr", purpose: "HOE Exhibit - March", amount: "", orderedBy: "Ritvik", bill: "" },
+    { id: 3, sourcedOn: "08/02/2025", item: "Japan Satin Fabric", vendor: "The Wardrobe Fabrics", description: "Ombre dyed satin 100 mtr, 2 Colors", purpose: "HOE Exhibit - March", amount: 13850, orderedBy: "Ritvik", bill: "Invoice_1034.pdf" },
+    { id: 4, sourcedOn: "27/02/2025", item: "Raw silk lining, Net", vendor: "Balaji Fabric", description: "Raw silk lining 8 mtr, Net 15 mtr", purpose: "HOE Customer", amount: "", orderedBy: "Ritvik", bill: "" },
+    { id: 5, sourcedOn: "04/02/2025", item: "Organza, Brocade, Dola silk, Viscose organza", vendor: "Balaji Fabric", description: "Organza 2.5mtr, Dola silk 1mtr, Viscose organza 5 mtr, Brocade 6 mtr", purpose: "HOE Customer", amount: 2470, orderedBy: "Priyanka", bill: "" },
+    { id: 6, sourcedOn: "04/03/2025", item: "Linen fabric", vendor: "Balaji Fabric", description: "Black linen 2 mtr", purpose: "Anubhavi garment", amount: 500, orderedBy: "Anubhavi", bill: "" },
+    { id: 7, sourcedOn: "04/10/2025", item: "Raw silk, Lining", vendor: "Balaji Fabric", description: "Raw silk 7 mtr, Lining 2 mtr", purpose: "HOE And FD", amount: 560, orderedBy: "Ritvik", bill: "" },
+    { id: 8, sourcedOn: "05/09/2025", item: "Satin", vendor: "Balaji Fabric", description: "30 mtr satin dye", purpose: "FD Flag", amount: 1800, orderedBy: "", bill: "" },
+    { id: 9, sourcedOn: "05/19/2025", item: "Cotton cambridge", vendor: "Balaji Fabric", description: "17 Mtr purple, 17 mtr blue all dye", purpose: "HOE", amount: 2040, orderedBy: "", bill: "" },
+    { id: 10, sourcedOn: "06/04/2025", item: "Raw silk, White georgette", vendor: "Balaji Fabric", description: "Raw silk 17+6 mtr dye, Georgette 10 mtr", purpose: "HOE", amount: 1997, orderedBy: "", bill: "" },
+    { id: 11, sourcedOn: "06/11/2025", item: "Organza, Satin lycra", vendor: "Balaji Fabric", description: "Organza 5mtr, Satin 5 mtr, Tissue silk 3mtr, Crushed Tissue 5mtr", purpose: "HOE", amount: 625, orderedBy: "", bill: "" },
+    { id: 12, sourcedOn: "06/21/2025", item: "Raw silk, Cotton cambridge", vendor: "Balaji Fabric", description: "Raw silk 9mtr, Cotton Cambridge 6mtr", purpose: "HOE", amount: 1125, orderedBy: "", bill: "" },
+    { id: 13, sourcedOn: "09/04/2025", item: "Cotton Cambridge, Georgette, Denim, Taffeta", vendor: "Balaji Fabric", description: "32+7+12+8+8 Mtr mixed fabrics", purpose: "HOE And Creations", amount: 5090, orderedBy: "", bill: "" },
+    { id: 14, sourcedOn: "09/18/2025", item: "Lace", vendor: "Gian Chand Jain", description: "3 Rolls", purpose: "HOE", amount: 1890, orderedBy: "Ritvik", bill: "" },
+    { id: 15, sourcedOn: "27/10/2025", item: "Patch", vendor: "Basira Collection", description: "23 patch", purpose: "HOE", amount: 8900, orderedBy: "Ritvik", bill: "" },
+    { id: 16, sourcedOn: "27/10/2025", item: "Gota lace", vendor: "K.S Jariwala", description: "15 rolls", purpose: "HOE", amount: 4883, orderedBy: "Ritvik", bill: "" },
+    { id: 17, sourcedOn: "27/10/2025", item: "Neck line, Lace", vendor: "M & H Collection", description: "21 total", purpose: "HOE", amount: 6930, orderedBy: "Ritvik", bill: "" },
+    { id: 18, sourcedOn: "27/10/2025", item: "Lace", vendor: "Gian Chand", description: "30 mtr", purpose: "HOE", amount: 23950, orderedBy: "Ritvik", bill: "" },
+    { id: 19, sourcedOn: "07/11/2025", item: "Kali, Net", vendor: "Balaji Fabric", description: "416 kali, 35 mtr", purpose: "HOE", amount: 45150, orderedBy: "", bill: "" },
+    { id: 20, sourcedOn: "10/01/2026", item: "Mirror lace, Kiran lace, Broad lace", vendor: "Gian Chand", description: "Multiple pieces", purpose: "HOE Exhibit & Custom", amount: 7119, orderedBy: "Prateek", bill: "" },
+    { id: 21, sourcedOn: "07/03/2026", item: "Jaipuri georgette, Poly georgette, Cambric, Crepe, Taffeta, Cosmo", vendor: "Balaji Fabric", description: "8+6+7.5+15.5+4+4.5+25 mtr", purpose: "HOE", amount: 8328, orderedBy: "", bill: "" },
+  ],
+  fabricStock: [
+    { id: 1, fabricType: "Plan Net", fabricName: "Yellow", orderQty: "24", leftover: "12", lastUpdated: "05/02/2025" },
+    { id: 2, fabricType: "Plan Net", fabricName: "Lemon Yellow", orderQty: "24", leftover: "12", lastUpdated: "05/02/2025" },
+    { id: 3, fabricType: "Plan Net", fabricName: "Sky Blue", orderQty: "3", leftover: "3", lastUpdated: "05/02/2025" },
+    { id: 4, fabricType: "Plan Net", fabricName: "Light Brown", orderQty: "12", leftover: "2", lastUpdated: "05/02/2025" },
+    { id: 5, fabricType: "Plan Net", fabricName: "Brown", orderQty: "15", leftover: "9", lastUpdated: "05/02/2025" },
+    { id: 6, fabricType: "Plan Net", fabricName: "Navy Blue", orderQty: "10", leftover: "10", lastUpdated: "05/02/2025" },
+    { id: 7, fabricType: "Plan Net", fabricName: "Pink Shine", orderQty: "12", leftover: "12", lastUpdated: "05/02/2025" },
+    { id: 8, fabricType: "Plan Net", fabricName: "Light Peach", orderQty: "10", leftover: "10", lastUpdated: "05/02/2025" },
+    { id: 9, fabricType: "Organza", fabricName: "White", orderQty: "20", leftover: "14", lastUpdated: "07/02/2025" },
+    { id: 10, fabricType: "Organza", fabricName: "Sequene", orderQty: "", leftover: "1", lastUpdated: "07/02/2025" },
+    { id: 11, fabricType: "Kali", fabricName: "Banarasi Brocade", orderQty: "60", leftover: "36", lastUpdated: "05/02/2025" },
+    { id: 12, fabricType: "Kali", fabricName: "Luckhnowi Work", orderQty: "44", leftover: "22", lastUpdated: "05/02/2025" },
+    { id: 13, fabricType: "Kali", fabricName: "Mirror Work", orderQty: "50", leftover: "3", lastUpdated: "05/02/2025" },
+    { id: 14, fabricType: "Georgette", fabricName: "White Sequene", orderQty: "5", leftover: "5", lastUpdated: "05/02/2025" },
+    { id: 15, fabricType: "Georgette", fabricName: "Plane Dye Able", orderQty: "", leftover: "2", lastUpdated: "05/02/2025" },
+    { id: 16, fabricType: "Crepe", fabricName: "White", orderQty: "6", leftover: "6", lastUpdated: "05/02/2025" },
+    { id: 17, fabricType: "Cosmo", fabricName: "Multi Thread Work", orderQty: "5", leftover: "5", lastUpdated: "05/02/2025" },
+    { id: 18, fabricType: "Surat — Linen", fabricName: "Linen", orderQty: "200", leftover: "13", lastUpdated: "" },
+    { id: 19, fabricType: "Surat — Raw Silk", fabricName: "Pink", orderQty: "300", leftover: "58", lastUpdated: "" },
+    { id: 20, fabricType: "Surat — Raw Silk", fabricName: "Mehroon", orderQty: "", leftover: "21", lastUpdated: "" },
+    { id: 21, fabricType: "Surat — Georgette", fabricName: "Georgette", orderQty: "100", leftover: "36", lastUpdated: "" },
+    { id: 22, fabricType: "Surat — Satin (Modal Silk)", fabricName: "Modal Silk", orderQty: "100", leftover: "30", lastUpdated: "" },
+    { id: 23, fabricType: "Surat — Organza", fabricName: "Organza", orderQty: "100", leftover: "36", lastUpdated: "" },
+    { id: 24, fabricType: "Surat — Cotton Blend", fabricName: "Cotton Blend", orderQty: "100", leftover: "13", lastUpdated: "" },
+  ],
+  customOrders: [
+    { id: 1,  customer: "Vreshti Mehta",  garment: "Brown Mirror Anarkali with Dupatta",  size: "M",          fabricSegments: [{fabric:"Net",mtrs:"12"},{fabric:"Lining",mtrs:"4"}], remark: "Alteration", dispatch: "", lastUpdated: "15/01/2026", status: "In Progress" },
+    { id: 2,  customer: "Vansikha",        garment: "Blue Short Kurti, Plazzo with Dupatta", size: "Customized", fabricSegments: [{fabric:"Main fabric",mtrs:"5.5"},{fabric:"Lining",mtrs:"5.5"}], remark: "Alteration", dispatch: "", lastUpdated: "15/01/2026", status: "In Progress" },
+    { id: 3,  customer: "Rupali Nawal",    garment: "Jaashna Suit",                        size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"18"},{fabric:"Lucknowi",mtrs:"1"},{fabric:"Georgette",mtrs:"1"},{fabric:"Lining",mtrs:"5"}], remark: "Returned — redelivered 29th Jan", dispatch: "24/01/2026", lastUpdated: "30/01/2026", status: "Dispatched" },
+    { id: 4,  customer: "Roma",            garment: "Candy",                               size: "Customized", fabricSegments: [{fabric:"Tafta",mtrs:"12"},{fabric:"Lining",mtrs:"6"}], remark: "", dispatch: "02/02/2026", lastUpdated: "03/02/2026", status: "Dispatched" },
+    { id: 5,  customer: "Sakashi",         garment: "Jashna Anarkali in Yellow",           size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"20"},{fabric:"Lining",mtrs:"6"},{fabric:"Georgette",mtrs:"1"},{fabric:"Luchknowi",mtrs:"1"}], remark: "", dispatch: "04/02/2026", lastUpdated: "04/02/2026", status: "Dispatched" },
+    { id: 6,  customer: "Mahimaa",         garment: "Drape Saree + Lavender Lengha + Pink Dupatta", size: "Customized", fabricSegments: [{fabric:"",mtrs:""}], remark: "", dispatch: "03/02/2026", lastUpdated: "04/02/2026", status: "Dispatched" },
+    { id: 7,  customer: "Sima",            garment: "Orange Red Drape Skirt and Blouse",  size: "Customized", fabricSegments: [{fabric:"Skirt",mtrs:"4"},{fabric:"Blouse",mtrs:"1"},{fabric:"Pallu",mtrs:"3"}], remark: "", dispatch: "04/02/2026", lastUpdated: "07/02/2026", status: "Dispatched" },
+    { id: 8,  customer: "Sonali",          garment: "Kali Shrug with Skirt + Petrol Blue Anarkali", size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"24"},{fabric:"Georgette",mtrs:"4"},{fabric:"Lining",mtrs:"5"},{fabric:"Dupatta",mtrs:"3"}], remark: "Returned for fit — resent corrected", dispatch: "09/02/2026", lastUpdated: "12/02/2026", status: "Dispatched" },
+    { id: 9,  customer: "Garima Darda",    garment: "Jashna in Pink",                     size: "Customized", fabricSegments: [{fabric:"Kali",mtrs:"20"},{fabric:"Luchkonwi",mtrs:"1"},{fabric:"Georgette",mtrs:"1"},{fabric:"Lining",mtrs:"6"}], remark: "", dispatch: "09/02/2026", lastUpdated: "12/02/2026", status: "Dispatched" },
+    { id: 10, customer: "Indira",          garment: "Black Blouse + Pink Blouse with Saree", size: "Customized", fabricSegments: [{fabric:"Main x2",mtrs:"2"},{fabric:"Lining x2",mtrs:"2"}], remark: "By Porter", dispatch: "11/02/2026", lastUpdated: "12/02/2026", status: "Dispatched" },
+    { id: 11, customer: "Anuja",           garment: "Blue Mermaid Skirt, Halter Top with Dupatta", size: "Customized", fabricSegments: [{fabric:"Embroidered",mtrs:"4"},{fabric:"Plain",mtrs:"4"},{fabric:"Dupatta + Lining",mtrs:"8"}], remark: "", dispatch: "19/02/2026", lastUpdated: "", status: "In Progress" },
+    { id: 12, customer: "Pooja Sirayat",   garment: "Red Drape Skirt + Blue Sequin Gown + Purple Lengha + Baby Pink Drape Saree", size: "Customized", fabricSegments: [{fabric:"Crepe",mtrs:"6"},{fabric:"Red Sequin",mtrs:"1"},{fabric:"Net",mtrs:"4"},{fabric:"Lining",mtrs:"6"}], remark: "", dispatch: "19/02/2026", lastUpdated: "", status: "In Progress" },
+  ],
+  leads: [
+    { id: 1, name: "Yashika", contact: "7982403154", status: "" },
+    { id: 2, name: "Mehak", contact: "7058548482", status: "Contact karugi" },
+    { id: 3, name: "Simi", contact: "7410154535", status: "No" },
+    { id: 4, name: "Mahima", contact: "8383965736", status: "Asked for price" },
+    { id: 5, name: "Reshma", contact: "9960960274", status: "" },
+    { id: 6, name: "Sunita Sahu", contact: "7008940743", status: "No response" },
+    { id: 7, name: "Anita", contact: "9826471819", status: "" },
+    { id: 8, name: "HOE Client", contact: "9340536398", status: "No response" },
+    { id: 9, name: "Sanskruti", contact: "7385560644", status: "Events date postponed" },
+    { id: 10, name: "Unknown", contact: "9136536577", status: "Pricing issue" },
+    { id: 11, name: "Shradha Jadhav", contact: "8669533578", status: "Order done" },
+    { id: 12, name: "Supriya Sharma", contact: "7295823923", status: "No response" },
+    { id: 13, name: "Tulika", contact: "8595799453", status: "" },
+    { id: 14, name: "Kuljeet Jain", contact: "7000126643", status: "No response" },
+    { id: 15, name: "Aditi Pandey", contact: "9555768878", status: "" },
+    { id: 16, name: "Kashvi", contact: "9591874422", status: "Still in touch but order NC" },
+    { id: 17, name: "Priyanka International", contact: "61469869572", status: "Still in touch but order NC" },
+    { id: 18, name: "Anuja", contact: "8390652804", status: "Order done" },
+    { id: 19, name: "Anshu", contact: "8558910158", status: "Not received revert" },
+    { id: 20, name: "Manisha", contact: "9149159358", status: "Will send reference image" },
+    { id: 21, name: "Chirag", contact: "7042728654", status: "Msg sent" },
+    { id: 22, name: "Nikita Sharma", contact: "9883710790", status: "Msg sent" },
+  ],
+  outfitStock: [
+    { id: 1,  type: "Anarkali",           design: "Petrol Blue Kali Suit with Dupatta",      sizes: "M, L",         totalProduced: 6,  sold: 5,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 2,  type: "Anarkali",           design: "Brown Mirror with Dupatta",                sizes: "M, L",         totalProduced: 3,  sold: 1,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 3,  type: "Anarkali",           design: "White Gota Patti Suit (Sufi)",             sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 4,  type: "Anarkali",           design: "Jashna Suit",                              sizes: "Customized",   totalProduced: 18, sold: 18, available: 0, lastUpdated: "11/03/2026", remarks: "Sold out" },
+    { id: 5,  type: "Anarkali",           design: "Cosmo Suit with Work Jacket",              sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 6,  type: "Kaftan",             design: "Summer Print",                             sizes: "Free Size",    totalProduced: 5,  sold: 3,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 7,  type: "Kaftan",             design: "Cosmo with Pants",                         sizes: "Free Size, S/M/L", totalProduced: 8, sold: 5, available: 3, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 8,  type: "Kaftan",             design: "Holi Kaftan Set",                          sizes: "Free Size, S/M/L", totalProduced: 3, sold: 0, available: 3, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 9,  type: "Short Kurti Sharara",design: "Gota Patti Sharara with Dupatta (Sufi)",   sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 10, type: "Short Kurti Sharara",design: "Work Kurta Plain Georgette Sharara",       sizes: "M, L",         totalProduced: 3,  sold: 1,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 11, type: "Short Kurti Plazzo", design: "Blue Short Kurti Plazzo with Dupatta",     sizes: "M",            totalProduced: 3,  sold: 2,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 12, type: "Short Kurti Plazzo", design: "Purple Shabya Lace Plazzo Kurti",          sizes: "M, L",         totalProduced: 3,  sold: 0,  available: 3, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 13, type: "Saree with Blouse",  design: "Organza Saree with Blouse",                sizes: "M",            totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 14, type: "Saree with Blouse",  design: "Banarasi Saree with Blouse Piece",         sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 15, type: "Saree with Blouse",  design: "Drape Saree with Corset Blouse",           sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 16, type: "Dresses",            design: "Barbie",                                   sizes: "M, L",         totalProduced: 15, sold: 13, available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 17, type: "Dresses",            design: "Candy",                                    sizes: "M, L",         totalProduced: 15, sold: 15, available: 0, lastUpdated: "11/03/2026", remarks: "Sold out" },
+    { id: 18, type: "Dresses",            design: "Luchnowi Dress",                           sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 19, type: "Dresses",            design: "Summer Dress",                             sizes: "M, L",         totalProduced: 4,  sold: 2,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 20, type: "Jumpsuit",           design: "Brocade Green",                            sizes: "M, L",         totalProduced: 5,  sold: 3,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 21, type: "Jumpsuit",           design: "Brocade Peach",                            sizes: "M",            totalProduced: 5,  sold: 4,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 22, type: "Jumpsuit",           design: "Brocade Blue",                             sizes: "M, L",         totalProduced: 2,  sold: 0,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 23, type: "Lengha",             design: "Vine Velvet Lengha with Dupatta",          sizes: "M, L",         totalProduced: 2,  sold: 1,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 24, type: "Lengha",             design: "White Luchnowi Lengha",                    sizes: "M",            totalProduced: 1,  sold: 0,  available: 1, lastUpdated: "11/03/2026", remarks: "" },
+    { id: 25, type: "Kali Shrug",         design: "Kali Shrug with Skirt",                   sizes: "M, L",         totalProduced: 4,  sold: 4,  available: 0, lastUpdated: "11/03/2026", remarks: "1 New incoming" },
+    { id: 26, type: "Mens Wear",          design: "Ombre Kurta",                              sizes: "M, L",         totalProduced: 6,  sold: 4,  available: 2, lastUpdated: "11/03/2026", remarks: "" },
+  ],
+  exhibitNeeds: [
+    { id: 1,  category: "Marketing",  item: "Scholarship upto 30%",   qty: "78",  status: "Not Ready" },
+    { id: 2,  category: "Marketing",  item: "Visiting Card",           qty: "110", status: "Not Ready" },
+    { id: 3,  category: "Marketing",  item: "Cashback Coupon",         qty: "8",   status: "Not Ready" },
+    { id: 4,  category: "Marketing",  item: "Upto 10% Off Coupon",     qty: "30",  status: "Not Ready" },
+    { id: 5,  category: "Marketing",  item: "Thank You Card",          qty: "15",  status: "Not Ready" },
+    { id: 6,  category: "Marketing",  item: "Template Book",           qty: "",    status: "Not Ready" },
+    { id: 7,  category: "Marketing",  item: "Look Book",               qty: "",    status: "Not Ready" },
+    { id: 8,  category: "Marketing",  item: "Awareness Reel",          qty: "",    status: "Not Ready" },
+    { id: 9,  category: "Marketing",  item: "Skill in a Box",          qty: "38",  status: "Not Ready" },
+    { id: 10, category: "Decoration", item: "Jute Thread",             qty: "",    status: "Not Ready" },
+    { id: 11, category: "Decoration", item: "Laces",                   qty: "",    status: "Not Ready" },
+    { id: 12, category: "Decoration", item: "Hand Print Cloth",        qty: "",    status: "Not Ready" },
+    { id: 13, category: "Decoration", item: "Fairy Lights",            qty: "",    status: "Not Ready" },
+    { id: 14, category: "Decoration", item: "Name Board",              qty: "",    status: "Not Ready" },
+    { id: 15, category: "Decoration", item: "Body Form (Baby)",        qty: "",    status: "Not Ready" },
+    { id: 16, category: "Decoration", item: "Collection Motifs",       qty: "",    status: "Not Ready" },
+    { id: 17, category: "Tools",      item: "Hangers",                 qty: "60",  status: "Not Ready" },
+    { id: 18, category: "Tools",      item: "HOE Bags",                qty: "30",  status: "Not Ready" },
+    { id: 19, category: "Tools",      item: "Pearl Pins",              qty: "",    status: "Not Ready" },
+    { id: 20, category: "Tools",      item: "Cloth Clip",              qty: "",    status: "Not Ready" },
+    { id: 21, category: "Tools",      item: "Stimmer",                 qty: "",    status: "Not Ready" },
+    { id: 22, category: "Tools",      item: "Fabric Glue",             qty: "",    status: "Not Ready" },
+    { id: 23, category: "Tools",      item: "Safety Pins",             qty: "",    status: "Not Ready" },
+    { id: 24, category: "Tools",      item: "Thread",                  qty: "",    status: "Not Ready" },
+    { id: 25, category: "Tools",      item: "Scissor",                 qty: "",    status: "Not Ready" },
+    { id: 26, category: "Tools",      item: "Measuring Tape",          qty: "",    status: "Not Ready" },
+    { id: 27, category: "Tools",      item: "Cello Tape",              qty: "",    status: "Not Ready" },
+    { id: 28, category: "Tools",      item: "Stapler and Pins",        qty: "",    status: "Not Ready" },
+    { id: 29, category: "Tools",      item: "QR Machine",              qty: "",    status: "Not Ready" },
+    { id: 30, category: "Tools",      item: "Shade Card",              qty: "",    status: "Not Ready" },
+    { id: 31, category: "Tools",      item: "Invoice",                 qty: "45",  status: "Not Ready" },
+  ],
+};
+
+// Firebase db accessed via window.db (initialized below babel)
+
+// ── DUAL-MODE HOOK: Firebase when available, localStorage fallback ─
+function useFirebaseData(key, initial) {
+  const [data, setData] = useState(() => {
+    // Always seed from localStorage first for instant render
+    try { const s = localStorage.getItem("hoe_v4_" + key); return s ? JSON.parse(s) : initial; }
+    catch { return initial; }
+  });
+  const [ready, setReady] = useState(!window.firebaseReady); // if no firebase, instantly ready
+
+  useEffect(() => {
+    if (!window.firebaseReady || !window.db) {
+      setReady(true);
+      return;
+    }
+    const ref = window.db.ref("hoe/" + key);
+    const handler = ref.on("value", snap => {
+      const val = snap.val();
+      if (val !== null && val !== undefined) {
+        const arr = Array.isArray(val) ? val : Object.values(val);
+        setData(arr);
+        try { localStorage.setItem("hoe_v4_" + key, JSON.stringify(arr)); } catch {}
+      } else {
+        ref.set(initial);
+      }
+      setReady(true);
+    }, err => { console.error(err); setReady(true); });
+    return () => ref.off("value", handler);
+  }, []);
+
+  const update = valOrFn => {
+    setData(prev => {
+      const next = typeof valOrFn === "function" ? valOrFn(prev) : valOrFn;
+      try { localStorage.setItem("hoe_v4_" + key, JSON.stringify(next)); } catch {}
+      if (window.firebaseReady && window.db) window.db.ref("hoe/" + key).set(next);
+      return next;
+    });
+  };
+
+  return [data, update, ready];
+}
+
+function useFirebaseList(key, initial) {
+  const [data, setData] = useState(() => {
+    try { const s = localStorage.getItem("hoe_meta_" + key); return s ? JSON.parse(s) : initial; }
+    catch { return initial; }
+  });
+
+  useEffect(() => {
+    if (!window.firebaseReady || !window.db) return;
+    const ref = window.db.ref("hoe_meta/" + key);
+    const handler = ref.on("value", snap => {
+      const val = snap.val();
+      if (val !== null && Array.isArray(val)) {
+        setData(val);
+        try { localStorage.setItem("hoe_meta_" + key, JSON.stringify(val)); } catch {}
+      } else if (val === null) {
+        ref.set(initial);
+      }
+    });
+    return () => ref.off("value", handler);
+  }, []);
+
+  const update = next => {
+    setData(next);
+    try { localStorage.setItem("hoe_meta_" + key, JSON.stringify(next)); } catch {}
+    if (window.firebaseReady && window.db) window.db.ref("hoe_meta/" + key).set(next);
+  };
+
+  return [data, update];
+}
+
+// ── EDIT CELL ────────────────────────────────────────────────────
+function EditCell({ value, onChange, type = "text", mono, placeholder }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(value ?? "");
+  useEffect(() => { if (!editing) setVal(value ?? ""); }, [value, editing]);
+  const commit = () => { setEditing(false); onChange(val); };
+  if (editing) return (
+    <input autoFocus type={type} value={val}
+      onChange={e => setVal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") { setEditing(false); setVal(value ?? ""); }}}
+      style={{ background: "#fff", border: `1px solid ${C.accentLight}`, borderRadius: 4, padding: "3px 8px",
+        color: C.text, fontFamily: mono ? "monospace" : "'DM Sans',sans-serif", fontSize: "0.82rem",
+        width: "100%", minWidth: 60 }} />
+  );
+  return (
+    <span onClick={() => setEditing(true)}
+      style={{ cursor: "text", display: "block", minHeight: 20, padding: "2px 3px",
+        borderBottom: `1px dashed ${C.border}`, lineHeight: 1.5, color: C.text,
+        fontFamily: mono ? "monospace" : "'DM Sans',sans-serif", fontSize: "0.82rem" }}>
+      {(value !== undefined && value !== null && value !== "")
+        ? value
+        : <span style={{ color: C.textLight, fontStyle: "italic", fontSize: "0.75em" }}>{placeholder || "—"}</span>}
+    </span>
+  );
+}
+
+// ── DATE CELL ────────────────────────────────────────────────────
+function DateCell({ value, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const toISO = v => {
+    if (!v) return "";
+    const p = v.split("/");
+    if (p.length === 3) return `${p[2]}-${p[1].padStart(2,"0")}-${p[0].padStart(2,"0")}`;
+    return v;
+  };
+  const toDisplay = v => {
+    if (!v) return "";
+    const p = v.split("-");
+    if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return v;
+  };
+  if (editing) return (
+    <input autoFocus type="date" defaultValue={toISO(value)}
+      onChange={e => { if (e.target.value) { onChange(toDisplay(e.target.value)); setEditing(false); }}}
+      onBlur={() => setEditing(false)}
+      style={{ background: "#fff", border: `1px solid ${C.accentLight}`, borderRadius: 4, padding: "3px 8px",
+        color: C.text, fontFamily: "'DM Sans',monospace", fontSize: "0.82rem", colorScheme: "light" }} />
+  );
+  return (
+    <span onClick={() => setEditing(true)}
+      style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 5, minHeight: 20, padding: "2px 3px",
+        borderBottom: `1px dashed ${C.border}`, fontSize: "0.82rem", fontFamily: "'DM Sans',monospace", color: value ? C.text : C.textLight }}>
+      {value ? <><span style={{ fontSize: "0.7rem", opacity: 0.5 }}>📅</span>{value}</> : <span style={{ fontStyle: "italic", fontSize: "0.75em" }}>pick date</span>}
+    </span>
+  );
+}
+
+// ── MTR NUMBER CELL ──────────────────────────────────────────────
+function MtrCell({ value, onChange, dim }) {
+  const [editing, setEditing] = useState(false);
+  const num = String(value || "").replace(/[^0-9.]/g, "");
+  const [val, setVal] = useState(num);
+  useEffect(() => { if (!editing) setVal(String(value || "").replace(/[^0-9.]/g, "")); }, [value, editing]);
+  const commit = () => { setEditing(false); onChange(val); };
+  if (editing) return (
+    <input autoFocus type="number" min="0" step="0.5" value={val}
+      onChange={e => setVal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => e.key === "Enter" && commit()}
+      style={{ background: "#fff", border: `1px solid ${C.accentLight}`, borderRadius: 4, padding: "3px 8px",
+        color: C.text, fontFamily: "'DM Sans',monospace", fontSize: "0.85rem", width: 80 }} />
+  );
+  return (
+    <span onClick={() => setEditing(true)}
+      style={{ cursor: "text", display: "block", padding: "2px 3px", borderBottom: `1px dashed ${C.border}`,
+        fontFamily: "'DM Sans',monospace", fontSize: "0.85rem", color: dim ? C.textMuted : C.text, fontWeight: num ? 500 : 300 }}>
+      {num !== "" ? num : <span style={{ color: C.textLight, fontStyle: "italic", fontSize: "0.75em" }}>—</span>}
+    </span>
+  );
+}
+
+// ── STATUS PILL ──────────────────────────────────────────────────
+function StatusPill({ value, onChange, options }) {
+  const sc = STATUS_COLORS[value] || { bg: "#f0ece6", color: C.textMid, border: C.border };
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 20,
+      background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`,
+      fontSize: "0.72rem", fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ background: "transparent", border: "none", color: "inherit", fontFamily: "inherit",
+          fontSize: "inherit", cursor: "pointer", WebkitAppearance: "none", appearance: "none", padding: 0, maxWidth: 170 }}>
+        {options.map(o => <option key={o} value={o} style={{ background: "#fff", color: C.text }}>{o || "— select —"}</option>)}
+      </select>
+    </span>
+  );
+}
+
+// ── DROPDOWN CELL WITH ADD-NEW + REMOVE ─────────────────────────
+function DropdownCell({ value, onChange, options, onAddOption, onRemoveOption, placeholder }) {
+  const [open, setOpen]     = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newVal, setNewVal] = useState("");
+  const [hovIdx, setHovIdx] = useState(-1);
+  const ref = useRef();
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setAdding(false); setHovIdx(-1); }};
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  const commit = () => {
+    const t = newVal.trim();
+    if (t) { onAddOption(t); onChange(t); }
+    setAdding(false); setNewVal(""); setOpen(false);
+  };
+  const removeOpt = (e, o) => {
+    e.stopPropagation();
+    if (onRemoveOption) onRemoveOption(o);
+    if (value === o) onChange("");
+  };
+  return (
+    <div ref={ref} style={{ position: "relative", minWidth: 130 }}>
+      <span onClick={() => setOpen(o => !o)}
+        style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 4, minHeight: 20, padding: "2px 4px", borderBottom: `1px dashed ${C.border}`,
+          fontSize: "0.82rem", color: value ? C.text : C.textLight, fontFamily: "'DM Sans',sans-serif" }}>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>
+          {value || (placeholder || "— select —")}
+        </span>
+        <span style={{ fontSize: "0.55rem", color: C.accentLight, flexShrink: 0 }}>▾</span>
+      </span>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 9999,
+          background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, minWidth: 200,
+          boxShadow: "0 8px 24px rgba(139,69,19,0.12)" }}>
+          <div style={{ maxHeight: 220, overflowY: "auto" }}>
+            {options.map((o, idx) => (
+              <div key={o}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "7px 10px 7px 14px", cursor: "pointer",
+                  background: hovIdx === idx ? C.accentFaint : o === value ? C.accentFaint : "transparent" }}
+                onMouseEnter={() => setHovIdx(idx)} onMouseLeave={() => setHovIdx(-1)}>
+                <span onClick={() => { onChange(o); setOpen(false); }}
+                  style={{ flex: 1, fontSize: "0.8rem", color: o === value ? C.accent : C.text,
+                    fontFamily: "'DM Sans',sans-serif", fontWeight: o === value ? 500 : 400 }}>
+                  {o}
+                </span>
+                {onRemoveOption && hovIdx === idx && (
+                  <span onClick={e => removeOpt(e, o)}
+                    title="Remove from list"
+                    style={{ cursor: "pointer", color: C.textLight, fontSize: "0.7rem", marginLeft: 6, flexShrink: 0,
+                      padding: "0 2px", lineHeight: 1 }}
+                    onMouseEnter={e => e.currentTarget.style.color = C.red}
+                    onMouseLeave={e => e.currentTarget.style.color = C.textLight}>🗑</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ borderTop: `1px solid ${C.border}`, padding: "6px 8px" }}>
+            {adding ? (
+              <div style={{ display: "flex", gap: 4 }}>
+                <input autoFocus value={newVal} onChange={e => setNewVal(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") { setAdding(false); setNewVal(""); }}}
+                  placeholder="Type new…"
+                  style={{ flex: 1, background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: 4,
+                    padding: "5px 8px", color: C.text, fontSize: "0.78rem" }} />
+                <button onClick={commit}
+                  style={{ background: C.accent, border: "none", borderRadius: 4, color: "#fff",
+                    cursor: "pointer", padding: "0 10px", fontSize: "0.8rem" }}>✓</button>
+              </div>
+            ) : (
+              <div onClick={() => setAdding(true)}
+                style={{ fontSize: "0.72rem", color: C.accent, cursor: "pointer", padding: "4px 6px",
+                  fontFamily: "'DM Sans',sans-serif", fontWeight: 500 }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                + Add new option
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── BILL CELL ────────────────────────────────────────────────────
+function BillCell({ value, onChange }) {
+  const fileRef = useRef();
+  const files = Array.isArray(value) ? value : (value ? [{ name: value, dataUrl: null }] : []);
+  const handleFile = e => {
+    const picked = Array.from(e.target.files);
+    if (!picked.length) return;
+    let loaded = 0; const newFiles = [];
+    picked.forEach(f => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        newFiles.push({ name: f.name, dataUrl: ev.target.result, type: f.type });
+        if (++loaded === picked.length) onChange([...files, ...newFiles]);
+      };
+      reader.readAsDataURL(f);
+    });
+    e.target.value = "";
+  };
+  const remove = idx => onChange(files.filter((_,i) => i !== idx));
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+      {files.map((f, i) => (
+        <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px",
+          background: C.accentFaint, border: `1px solid ${C.border}`, borderRadius: 4, maxWidth: 130 }}>
+          <span title={f.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            maxWidth: 80, fontSize: "0.68rem", color: C.accent, fontFamily: "'DM Sans',monospace", cursor: f.dataUrl ? "pointer" : "default" }}
+            onClick={() => { if (f.dataUrl) { const w = window.open(); w.document.write(`<iframe src="${f.dataUrl}" style="width:100%;height:100%;border:none"></iframe>`); }}}>
+            {f.name.length > 12 ? f.name.slice(0,10)+"…" : f.name}
+          </span>
+          <span onClick={() => remove(i)} style={{ cursor: "pointer", color: C.textMuted, fontSize: "0.65rem" }}
+            onMouseEnter={e => e.target.style.color = C.red} onMouseLeave={e => e.target.style.color = C.textMuted}>✕</span>
+        </span>
+      ))}
+      <span onClick={() => fileRef.current.click()}
+        style={{ cursor: "pointer", fontSize: "0.7rem", color: C.accent, border: `1px dashed ${C.accentLight}`,
+          borderRadius: 4, padding: "2px 8px", whiteSpace: "nowrap" }}
+        onMouseEnter={e => e.currentTarget.style.background = C.accentFaint}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+        + {files.length ? "Add" : "Upload"}
+      </span>
+      <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style={{ display: "none" }} onChange={handleFile} />
+    </div>
+  );
+}
+
+// ── FABRIC SEGMENTS CELL ─────────────────────────────────────────
+function FabricSegmentsCell({ segments, onChange }) {
+  const segs = Array.isArray(segments) && segments.length > 0 ? segments : [{ fabric: "", mtrs: "" }];
+  const update = (idx, field, val) => onChange(segs.map((s, i) => i === idx ? { ...s, [field]: val } : s));
+  const addSeg = () => onChange([...segs, { fabric: "", mtrs: "" }]);
+  const removeSeg = idx => { const n = segs.filter((_,i) => i !== idx); onChange(n.length ? n : [{ fabric: "", mtrs: "" }]); };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 280 }}>
+      {segs.map((seg, idx) => (
+        <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {/* Fabric name */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <EditCell value={seg.fabric} onChange={v => update(idx, "fabric", v)} placeholder="fabric name" />
+          </div>
+          {/* Mtrs badge */}
+          <div style={{ display: "flex", alignItems: "center", background: C.accentFaint,
+            border: `1px solid ${C.borderStrong}`, borderRadius: 6, padding: "2px 8px", flexShrink: 0, gap: 3 }}>
+            <div style={{ width: 44 }}>
+              <EditCell value={seg.mtrs} onChange={v => update(idx, "mtrs", v)} mono placeholder="0" />
+            </div>
+            <span style={{ fontSize: "0.68rem", color: C.textMuted, fontFamily: "'DM Sans',sans-serif" }}>mtr</span>
+          </div>
+          {segs.length > 1 && (
+            <span onClick={() => removeSeg(idx)} className="del-btn"
+              style={{ cursor: "pointer", color: C.textLight, fontSize: "0.75rem", flexShrink: 0 }}>✕</span>
+          )}
+        </div>
+      ))}
+      <span onClick={addSeg}
+        style={{ cursor: "pointer", fontSize: "0.7rem", color: C.accent, fontFamily: "'DM Sans',sans-serif",
+          fontWeight: 500, display: "inline-block", paddingTop: 2 }}
+        onMouseEnter={e => e.currentTarget.style.opacity = "0.6"}
+        onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+        + add fabric
+      </span>
+    </div>
+  );
+}
+
+// ── CUSTOM ORDER ROW ─────────────────────────────────────────────
+function CustomOrderRow({ r, i, onSave, onDelete }) {
+  const toSegs = v => {
+    if (Array.isArray(v) && v.length) return v;
+    if (!v) return [{ fabric: "", mtrs: "" }];
+    return String(v).split(",").map(s => ({ fabric: s.trim(), mtrs: "" })).filter(s => s.fabric) || [{ fabric: "", mtrs: "" }];
+  };
+  const [draft, setDraft] = useState({
+    customer: r.customer, garment: r.garment, size: r.size,
+    fabricSegments: toSegs(r.fabricSegments || r.fabric),
+    status: r.status || "In Progress", dispatch: r.dispatch, remark: r.remark,
+  });
+  const [dirty, setDirty] = useState(false);
+  const set = (field, val) => { setDraft(d => ({ ...d, [field]: val })); setDirty(true); };
+
+  return (
+    <tr className="hoe-row" style={{ background: dirty ? "#fffbf5" : C.surface }}>
+      <td style={tdS}><span style={{ fontSize: "0.7rem", color: C.textMuted }}>{i+1}</span></td>
+      <td style={tdS}><EditCell value={draft.customer} onChange={v => set("customer", v)} /></td>
+      <td style={{ ...tdS, minWidth: 220, maxWidth: 300 }}><EditCell value={draft.garment} onChange={v => set("garment", v)} /></td>
+      <td style={tdS}><EditCell value={draft.size} onChange={v => set("size", v)} /></td>
+      <td style={{ ...tdS, minWidth: 300 }}>
+        <FabricSegmentsCell segments={draft.fabricSegments} onChange={v => set("fabricSegments", v)} />
+      </td>
+      <td style={tdS}>
+        <StatusPill value={draft.status} onChange={v => set("status", v)} options={ORDER_STATUS} />
+      </td>
+      <td style={tdS}><DateCell value={draft.dispatch} onChange={v => set("dispatch", v)} /></td>
+      <td style={tdS}>
+        <span style={{ fontSize: "0.75rem", color: r.lastUpdated ? C.textMid : C.textLight, fontFamily: "'DM Sans',monospace", display: "block" }}>
+          {r.lastUpdated || <span style={{ fontStyle: "italic" }}>—</span>}
+        </span>
+        {dirty && <span style={{ fontSize: "0.62rem", color: C.gold, fontWeight: 600 }}>● unsaved</span>}
+      </td>
+      <td style={{ ...tdS, maxWidth: 160 }}><EditCell value={draft.remark} onChange={v => set("remark", v)} /></td>
+      <td style={{ ...tdS, verticalAlign: "middle" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "center" }}>
+          <button className="save-btn"
+            onClick={() => { onSave(r.id, draft); setDirty(false); }}
+            style={{ background: dirty ? C.accent : C.accentFaint, border: `1px solid ${dirty ? C.accent : C.border}`,
+              color: dirty ? "#fff" : C.textMuted, borderRadius: 5, fontSize: "0.65rem", letterSpacing: 0.8,
+              padding: "5px 10px", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, whiteSpace: "nowrap" }}>
+            ✓ Save
+          </button>
+          <button className="del-btn" onClick={onDelete}
+            style={{ background: "none", border: "none", color: C.textLight, cursor: "pointer", fontSize: "0.85rem" }}>✕</button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ── TABLE PRIMITIVES ─────────────────────────────────────────────
+const thS = { padding: "10px 14px", textAlign: "left", fontSize: "0.62rem", letterSpacing: 2, textTransform: "uppercase",
+  color: C.textMuted, fontFamily: "'DM Sans',sans-serif", fontWeight: 600,
+  borderBottom: `2px solid ${C.border}`, background: C.surfaceAlt, whiteSpace: "nowrap" };
+const tdS = { padding: "10px 14px", fontSize: "0.82rem", color: C.text,
+  borderBottom: `1px solid ${C.border}`, verticalAlign: "top", fontFamily: "'DM Sans',sans-serif" };
+
+const TH = ({ children, w }) => <th style={{ ...thS, width: w }}>{children}</th>;
+const TD = ({ children, accent, mono, muted, mw, style: extra }) => (
+  <td style={{ ...tdS, color: accent ? C.accent : muted ? C.textMuted : C.text,
+    fontFamily: mono ? "monospace" : "'DM Sans',sans-serif", maxWidth: mw, ...extra }}>
+    {children}
+  </td>
+);
+
+const AddBtn = ({ onClick, label }) => (
+  <button onClick={onClick} className="add-btn"
+    style={{ marginTop: 12, padding: "7px 18px", background: "transparent",
+      border: `1px solid ${C.borderStrong}`, color: C.textMid, borderRadius: 6,
+      fontFamily: "'DM Sans',sans-serif", fontSize: "0.72rem", letterSpacing: 1.5,
+      textTransform: "uppercase", fontWeight: 500 }}>
+    + {label}
+  </button>
+);
+const DelBtn = ({ onClick }) => (
+  <button onClick={onClick} className="del-btn"
+    style={{ background: "none", border: "none", color: C.textLight, cursor: "pointer", fontSize: "0.85rem", padding: "0 2px" }}>✕</button>
+);
+const SectionTitle = ({ children }) => (
+  <div style={{ margin: "4px 0 18px", display: "flex", alignItems: "center", gap: 14 }}>
+    <div style={{ height: 1, flex: 1, background: `linear-gradient(90deg,${C.accentLight},transparent)` }} />
+    <span style={{ fontSize: "0.58rem", letterSpacing: 5, color: C.accentLight, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{children}</span>
+    <div style={{ height: 1, flex: 1, background: `linear-gradient(90deg,transparent,${C.accentLight})` }} />
+  </div>
+);
+
+// ── MAIN DASHBOARD ───────────────────────────────────────────────
+function HOEDashboard({ user, onSignOut }) {
+  const [activeTab, setActiveTab] = useState("Inventory");
+  const [search, setSearch] = useState("");
+  const [syncStatus, setSyncStatus] = useState("connecting"); // connecting | live | saving
+
+  const [inventory,    setInventory,    r1] = useFirebaseData("inventory",    initialData.inventory);
+  const [fabricStock,  setFabricStock,  r2] = useFirebaseData("fabricStock",  initialData.fabricStock);
+  const [customOrders, setCustomOrders, r3] = useFirebaseData("customOrders", initialData.customOrders);
+  const [leads,        setLeads,        r4] = useFirebaseData("leads",        initialData.leads);
+  const [outfitStock,  setOutfitStock,  r5] = useFirebaseData("outfitStock",  initialData.outfitStock);
+  const [exhibitNeeds, setExhibitNeeds, r6] = useFirebaseData("exhibitNeeds", initialData.exhibitNeeds);
+
+  const [vendors,     setVendors]     = useFirebaseList("vendors",     ["Balaji Fabric","Lala Lace House","The Wardrobe Fabrics","Gian Chand Jain","Gian Chand","Basira Collection","K.S Jariwala","M & H Collection"]);
+  const [purposes,    setPurposes]    = useFirebaseList("purposes",    ["HOE","HOE Exhibit - March","HOE Exhibit & Custom","HOE Customer","HOE And FD","HOE And Creations","FD Flag","Anubhavi garment"]);
+  const [orderers,    setOrderers]    = useFirebaseList("orderers",    ["Ritvik","Priyanka","Prateek","Anubhavi"]);
+  const [fabricTypes, setFabricTypes] = useFirebaseList("fabricTypes", ["Plan Net","Organza","Kali","Georgette","Crepe","Cosmo","Luckhnowi Work","Net Work","Surat — Linen","Surat — Raw Silk","Surat — Georgette","Surat — Satin (Modal Silk)","Surat — Organza","Surat — Cotton Blend"]);
+  const [exhibitCats, setExhibitCats] = useFirebaseList("exhibitCats", ["Marketing","Decoration","Tools"]);
+  const [outfitCats,  setOutfitCats]  = useFirebaseList("outfitCats",  ["Anarkali","Kaftan","Short Kurti Sharara","Short Kurti Plazzo","Saree with Blouse","Dresses","Jumpsuit","Lengha","Kali Shrug","Mens Wear"]);
+
+  const allReady = r1 && r2 && r3 && r4 && r5 && r6;
+  useEffect(() => { setSyncStatus(allReady ? "live" : "connecting"); }, [allReady]);
+
+  // wrap setters to show "saving" flash
+  const withSync = setter => valOrFn => {
+    setSyncStatus("saving");
+    setter(valOrFn);
+    setTimeout(() => setSyncStatus("live"), 900);
+  };
+
+  const sInv  = withSync(setInventory);
+  const sFab  = withSync(setFabricStock);
+  const sCust = withSync(setCustomOrders);
+  const sLead = withSync(setLeads);
+  const sOut  = withSync(setOutfitStock);
+  const sExh  = withSync(setExhibitNeeds);
+
+  const upd = (list, set, id, f, v) => set(list.map(r => r.id === id ? { ...r, [f]: v } : r));
+  const del = (list, set, id) => set(list.filter(r => r.id !== id));
+  const add = (list, set, tpl) => set([...list, { ...tpl, id: list.length ? Math.max(...list.map(r => r.id)) + 1 : 1 }]);
+  const filt = arr => !search ? arr : arr.filter(r => JSON.stringify(r).toLowerCase().includes(search.toLowerCase()));
+
+  const totalSpend = inventory.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  const availableOutfits = outfitStock.reduce((s, r) => s + (parseInt(r.available) || 0), 0);
+  const activeLeads = leads.filter(l => !["No","No response","Order done"].includes(l.status)).length;
+  const inProgressOrders = customOrders.filter(o => o.status === "In Progress").length;
+  const exhibitReady = exhibitNeeds.filter(e => ["Ready","Collected"].includes(e.status)).length;
+
+  // Loading screen
+  if (!allReady) return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <div style={{ width: 48, height: 48, border: `3px solid ${C.border}`,
+        borderTop: `3px solid ${C.accent}`, borderRadius: "50%",
+        animation: "spin 0.9s linear infinite" }} />
+      <div style={{ fontSize: "0.8rem", color: C.textMuted, letterSpacing: 2, fontFamily: "'DM Sans',sans-serif" }}>
+        CONNECTING TO DATABASE…
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  // Sync status badge colours
+  const syncBadge = window.firebaseReady ? {
+    live:       { bg: "rgba(46,139,87,0.12)",  color: "#2e8b57", label: "● Live — Firebase" },
+    saving:     { bg: "rgba(160,114,42,0.12)", color: "#a0722a", label: "◌ Saving…" },
+    connecting: { bg: "rgba(58,127,193,0.12)", color: "#3a7fc1", label: "◌ Connecting…" },
+  }[syncStatus] : { bg: "rgba(100,100,100,0.1)", color: "#888", label: "◎ Local only" };
+
+  const tblStyle = { width: "100%", borderCollapse: "collapse", background: C.surface, borderRadius: 10,
+    overflow: "hidden", boxShadow: "0 2px 12px rgba(139,21,21,0.06)" };
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg }}>
+
+      {/* HEADER */}
+      <div style={{ background: "linear-gradient(135deg,#1a0808 0%,#2d1010 50%,#1a0808 100%)", position: "relative" }}>
+        <div style={{ height: 3, background: "linear-gradient(90deg,transparent,#8B1515,#c47070,#8B1515,transparent)" }} />
+        <div style={{ padding: "24px 44px 20px", display: "flex", alignItems: "center",
+          justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+            <img src="data:image/png;base64,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" style={{ height: 80, width: "auto", borderRadius: 6, flexShrink: 0 }} alt="HOE Logo" />
+            <div>
+              <div style={{ fontSize: "0.48rem", letterSpacing: 7, color: "rgba(253,245,240,0.5)",
+                fontFamily: "'DM Sans',sans-serif", fontWeight: 400, marginBottom: 4 }}>✦ ATELIER OPERATIONS ✦</div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "1.5rem", fontWeight: 300,
+                color: "#fdf5f0", letterSpacing: 5, lineHeight: 1 }}>
+                HOUSE <span style={{ color: "#c4504a", fontStyle: "normal" }}>of</span> ENTREPRENAARI
+              </div>
+              <div style={{ marginTop: 5, fontSize: "0.48rem", letterSpacing: 5, color: "rgba(253,245,240,0.35)",
+                fontFamily: "'DM Sans',sans-serif" }}>
+                INVENTORY · ORDERS · LEADS · EXHIBITION
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {[
+              { v: `₹${(totalSpend/1000).toFixed(0)}K`, l: "Total Sourced", icon: "◈", tab: "Inventory" },
+              { v: inProgressOrders,  l: "Active Orders",  icon: "✂", tab: "Custom Orders" },
+              { v: activeLeads,       l: "Warm Leads",     icon: "◉", tab: "Leads" },
+              { v: availableOutfits,  l: "In Stock",       icon: "◆", tab: "Outfit Stock" },
+              { v: `${exhibitReady}/${exhibitNeeds.length}`, l: "Exhibit Ready", icon: "✦", tab: "Exhibit Needs" },
+            ].map((s, i) => (
+              <div key={s.l} className="kpi-card"
+                onClick={() => { setActiveTab(s.tab); setSearch(""); window.scrollTo({ top: 110, behavior: "smooth" }); }}
+                style={{ padding: "10px 16px", background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(196,112,112,0.25)", borderRadius: 8, textAlign: "center",
+                  minWidth: 84, animation: `fadeUp 0.4s ease ${i*0.07}s both` }}>
+                <div style={{ fontSize: "0.6rem", color: "rgba(196,112,112,0.55)", marginBottom: 3 }}>{s.icon}</div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "1.4rem", fontWeight: 300,
+                  color: "#fdf5f0", lineHeight: 1 }}>{s.v}</div>
+                <div style={{ fontSize: "0.48rem", letterSpacing: 1.5, color: "rgba(253,245,240,0.4)",
+                  marginTop: 4, textTransform: "uppercase", fontFamily: "'DM Sans',sans-serif" }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ height: 2, background: "linear-gradient(90deg,transparent,#8B1515,transparent)", opacity: 0.5 }} />
+      </div>
+
+      {/* NAV */}
+      <div style={{ background: "#ffffff", borderBottom: `1px solid ${C.border}`,
+        padding: "0 44px", display: "flex", alignItems: "stretch", overflowX: "auto" }}>
+        {TABS.map(t => (
+          <button key={t} className="tab-btn"
+            onClick={() => { setActiveTab(t); setSearch(""); }}
+            style={{ padding: "13px 18px", fontFamily: "'DM Sans',sans-serif", fontSize: "0.68rem",
+              letterSpacing: 1.8, textTransform: "uppercase", fontWeight: activeTab === t ? 600 : 400,
+              color: activeTab === t ? C.accent : C.textMuted,
+              borderBottom: activeTab === t ? `2px solid ${C.accent}` : "2px solid transparent",
+              whiteSpace: "nowrap", flexShrink: 0 }}>
+            {t}
+          </button>
+        ))}
+        <div style={{ flex: 1 }} />
+        {/* Sync status badge */}
+        <div style={{ alignSelf: "center", marginRight: 8, padding: "4px 10px", borderRadius: 20,
+          background: syncBadge.bg, fontSize: "0.65rem", color: syncBadge.color,
+          fontFamily: "'DM Sans',sans-serif", fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }}>
+          {syncBadge.label}
+        </div>
+        {/* User + sign out */}
+        <div style={{ alignSelf: "center", display: "flex", alignItems: "center", gap: 8,
+          marginRight: 12, flexShrink: 0 }}>
+          <span style={{ fontSize: "0.65rem", color: C.textMuted, fontFamily: "'DM Sans',sans-serif",
+            maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {user?.email || ""}
+          </span>
+          <button onClick={onSignOut}
+            style={{ padding: "4px 12px", background: C.accentFaint, border: `1px solid ${C.border}`,
+              borderRadius: 20, fontSize: "0.62rem", color: C.accent, cursor: "pointer",
+              fontFamily: "'DM Sans',sans-serif", fontWeight: 600, whiteSpace: "nowrap" }}>
+            Sign out
+          </button>
+        </div>
+        <div style={{ alignSelf: "center", position: "relative", flexShrink: 0 }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
+            color: C.textMuted, fontSize: "0.9rem", pointerEvents: "none" }}>⌕</span>
+          <input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
+            style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: 20,
+              padding: "6px 12px 6px 28px", color: C.text, fontSize: "0.75rem", width: 190,
+              fontFamily: "'DM Sans',sans-serif" }} />
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div style={{ padding: "24px 44px 80px", overflowX: "auto" }}>
+
+        {/* INVENTORY */}
+        {activeTab === "Inventory" && <>
+          <SectionTitle>MATERIAL SOURCING LEDGER</SectionTitle>
+          <table style={tblStyle}>
+            <thead><tr>
+              <TH w={36}>#</TH><TH>Date</TH><TH>Item(s)</TH><TH>Vendor</TH>
+              <TH>Description / Qty</TH><TH>Purpose</TH><TH>Amount ₹</TH>
+              <TH>Ordered By</TH><TH>Bill</TH><TH w={28}></TH>
+            </tr></thead>
+            <tbody>
+              {filt(inventory).map((r, i) => (
+                <tr key={r.id} className="hoe-row">
+                  <TD muted><span style={{ fontSize: "0.7rem" }}>{i+1}</span></TD>
+                  <td style={tdS}><DateCell value={r.sourcedOn} onChange={v => upd(inventory,sInv,r.id,"sourcedOn",v)} /></td>
+                  <TD accent mw={190}><EditCell value={r.item} onChange={v => upd(inventory,sInv,r.id,"item",v)} /></TD>
+                  <td style={tdS}><DropdownCell value={r.vendor} onChange={v => upd(inventory,sInv,r.id,"vendor",v)} options={vendors} onAddOption={v => setVendors(p => [...p, v])} onRemoveOption={v => setVendors(p => p.filter(x => x !== v))} placeholder="vendor" /></td>
+                  <TD mw={210}><EditCell value={r.description} onChange={v => upd(inventory,sInv,r.id,"description",v)} /></TD>
+                  <td style={tdS}><DropdownCell value={r.purpose} onChange={v => upd(inventory,sInv,r.id,"purpose",v)} options={purposes} onAddOption={v => setPurposes(p => [...p, v])} onRemoveOption={v => setPurposes(p => p.filter(x => x !== v))} placeholder="purpose" /></td>
+                  <TD mono accent><EditCell value={r.amount} onChange={v => upd(inventory,sInv,r.id,"amount",v)} type="number" mono /></TD>
+                  <td style={tdS}><DropdownCell value={r.orderedBy} onChange={v => upd(inventory,sInv,r.id,"orderedBy",v)} options={orderers} onAddOption={v => setOrderers(p => [...p, v])} onRemoveOption={v => setOrderers(p => p.filter(x => x !== v))} placeholder="person" /></td>
+                  <td style={tdS}><BillCell value={r.bill} onChange={v => upd(inventory,sInv,r.id,"bill",v)} /></td>
+                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(inventory,sInv,r.id)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ marginTop: 10, textAlign: "right", padding: "8px 14px",
+            background: C.surface, borderRadius: "0 0 8px 8px", borderTop: `1px solid ${C.border}` }}>
+            <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "0.95rem", color: C.textMid }}>
+              Total Sourced: <strong style={{ color: C.accent, fontSize: "1.1rem" }}>₹{totalSpend.toLocaleString()}</strong>
+            </span>
+          </div>
+          <AddBtn onClick={() => add(inventory,sInv,{sourcedOn:"",item:"",vendor:"Balaji Fabric",description:"",purpose:"HOE",amount:"",orderedBy:"",bill:""})} label="Add Entry" />
+        </>}
+
+        {/* FABRIC STOCK */}
+        {activeTab === "Fabric Stock" && <>
+          <SectionTitle>FABRIC INVENTORY STATUS</SectionTitle>
+          <table style={tblStyle}>
+            <thead><tr>
+              <TH w={36}>#</TH><TH>Fabric Type</TH><TH>Name / Colour</TH>
+              <TH>Ordered (in mtrs)</TH><TH>Remaining (in mtrs)</TH><TH>Last Updated</TH><TH w={28}></TH>
+            </tr></thead>
+            <tbody>
+              {filt(fabricStock).map((r, i) => {
+                const newGrp = i === 0 || fabricStock[i-1].fabricType !== r.fabricType;
+                return (
+                  <tr key={r.id} className="hoe-row" style={{ borderTop: newGrp && i > 0 ? `2px solid ${C.border}` : undefined }}>
+                    <TD muted><span style={{ fontSize: "0.7rem" }}>{i+1}</span></TD>
+                    <td style={tdS}>
+                      <DropdownCell value={r.fabricType} onChange={v => upd(fabricStock,sFab,r.id,"fabricType",v)}
+                        options={fabricTypes} onAddOption={v => setFabricTypes(p => [...p,v])} onRemoveOption={v => setFabricTypes(p => p.filter(x => x !== v))} placeholder="select type" />
+                    </td>
+                    <TD accent><EditCell value={r.fabricName} onChange={v => upd(fabricStock,sFab,r.id,"fabricName",v)} /></TD>
+                    <td style={tdS}><MtrCell value={r.orderQty} onChange={v => upd(fabricStock,sFab,r.id,"orderQty",v)} dim /></td>
+                    <td style={tdS}><MtrCell value={r.leftover} onChange={v => upd(fabricStock,sFab,r.id,"leftover",v)} /></td>
+                    <td style={tdS}><DateCell value={r.lastUpdated} onChange={v => upd(fabricStock,sFab,r.id,"lastUpdated",v)} /></td>
+                    <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(fabricStock,sFab,r.id)} /></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <AddBtn onClick={() => add(fabricStock,sFab,{fabricType:"",fabricName:"",orderQty:"",leftover:"",lastUpdated:""})} label="Add Fabric" />
+        </>}
+
+        {/* CUSTOM ORDERS */}
+        {activeTab === "Custom Orders" && <>
+          <SectionTitle>BESPOKE ORDER REGISTRY</SectionTitle>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            {ORDER_STATUS.map(s => {
+              const c = customOrders.filter(o => o.status === s).length;
+              const sc = STATUS_COLORS[s] || { color: C.textMid, border: C.border };
+              return <div key={s} style={{ padding: "4px 12px", borderRadius: 20, fontSize: "0.68rem",
+                border: `1px solid ${sc.border}`, color: sc.color, background: sc.bg }}>{s}: <strong>{c}</strong></div>;
+            })}
+          </div>
+          <table style={tblStyle}>
+            <thead><tr>
+      <TH w={34}>#</TH><TH>Customer</TH><TH style={{minWidth:220}}>Garment</TH><TH>Size</TH>
+              <TH style={{minWidth:300}}>Fabric Used</TH><TH>Status</TH><TH>Dispatch</TH>
+              <TH>Last Updated</TH><TH>Remarks</TH><TH w={80}></TH>
+            </tr></thead>
+            <tbody>
+              {filt(customOrders).map((r, i) => (
+                <CustomOrderRow key={r.id} r={r} i={i}
+                  onSave={(id, updates) => {
+                    const now = new Date();
+                    const ts = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+                    sCust(prev => prev.map(row => row.id === id ? { ...row, ...updates, lastUpdated: ts } : row));
+                  }}
+                  onDelete={() => del(customOrders, sCust, r.id)}
+                />
+              ))}
+            </tbody>
+          </table>
+          <AddBtn onClick={() => add(customOrders,sCust,{customer:"",garment:"",size:"Customized",fabricSegments:[{fabric:"",mtrs:""}],remark:"",dispatch:"",lastUpdated:"",status:"In Progress"})} label="Add Order" />
+        </>}
+
+        {/* LEADS */}
+        {activeTab === "Leads" && <>
+          <SectionTitle>CLIENT PIPELINE</SectionTitle>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            {["Order done","Asked for price","Still in touch but order NC","Msg sent","No response","No"].map(s => {
+              const c = leads.filter(l => l.status === s).length;
+              const sc = STATUS_COLORS[s] || { color: C.textMid, border: C.border };
+              return <div key={s} style={{ padding: "4px 12px", borderRadius: 20, fontSize: "0.68rem",
+                border: `1px solid ${sc.border}`, color: sc.color, background: sc.bg }}>{s}: <strong>{c}</strong></div>;
+            })}
+          </div>
+          <table style={tblStyle}>
+            <thead><tr>
+              <TH w={34}>#</TH><TH>Client Name</TH><TH>Contact</TH><TH>Status</TH><TH w={28}></TH>
+            </tr></thead>
+            <tbody>
+              {filt(leads).map((r, i) => (
+                <tr key={r.id} className="hoe-row">
+                  <TD muted><span style={{ fontSize: "0.7rem" }}>{i+1}</span></TD>
+                  <TD accent><EditCell value={r.name} onChange={v => upd(leads,sLead,r.id,"name",v)} /></TD>
+                  <TD mono><EditCell value={r.contact} onChange={v => upd(leads,sLead,r.id,"contact",v)} mono /></TD>
+                  <td style={tdS}><StatusPill value={r.status || ""} onChange={v => upd(leads,sLead,r.id,"status",v)} options={LEAD_STATUS} /></td>
+                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(leads,sLead,r.id)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <AddBtn onClick={() => add(leads,sLead,{name:"",contact:"",status:""})} label="Add Lead" />
+        </>}
+
+        {/* OUTFIT STOCK */}
+        {activeTab === "Outfit Stock" && <>
+          <SectionTitle>ATELIER COLLECTION STOCK</SectionTitle>
+          <table style={tblStyle}>
+            <thead><tr>
+              <TH w={34}>#</TH><TH>Category</TH><TH>Design Name</TH><TH>Sizes</TH>
+              <TH>Produced</TH><TH>Sold</TH><TH>In Stock</TH>
+              <TH>Updated</TH><TH>Notes</TH><TH w={28}></TH>
+            </tr></thead>
+            <tbody>
+              {filt(outfitStock).map((r, i) => {
+                const avail = parseInt(r.available) || 0;
+                return (
+                  <tr key={r.id} className="hoe-row">
+                    <TD muted><span style={{ fontSize: "0.7rem" }}>{i+1}</span></TD>
+                    <td style={{ ...tdS, minWidth: 180 }}>
+                      <DropdownCell
+                        value={r.type}
+                        onChange={v => upd(outfitStock,sOut,r.id,"type",v)}
+                        options={outfitCats}
+                        onAddOption={v => setOutfitCats(p => [...p, v])}
+                        onRemoveOption={v => setOutfitCats(p => p.filter(x => x !== v))}
+                        placeholder="select category"
+                      />
+                    </td>
+                    <TD><EditCell value={r.design} onChange={v => upd(outfitStock,sOut,r.id,"design",v)} /></TD>
+                    <TD><EditCell value={r.sizes} onChange={v => upd(outfitStock,sOut,r.id,"sizes",v)} /></TD>
+                    <TD mono><EditCell value={r.totalProduced} onChange={v => upd(outfitStock,sOut,r.id,"totalProduced",v)} type="number" mono /></TD>
+                    <TD mono><EditCell value={r.sold} onChange={v => upd(outfitStock,sOut,r.id,"sold",v)} type="number" mono /></TD>
+                    <td style={tdS}>
+                      <span style={{ display:"inline-block", padding:"3px 12px", borderRadius:12,
+                        fontFamily:"monospace", fontWeight:700, fontSize:"0.82rem",
+                        background: avail>0 ? "rgba(39,174,96,0.1)" : "rgba(192,57,43,0.1)",
+                        color: avail>0 ? C.green : C.red,
+                        border:`1px solid ${avail>0?"rgba(39,174,96,0.3)":"rgba(192,57,43,0.3)"}` }}>
+                        <EditCell value={r.available} onChange={v => upd(outfitStock,sOut,r.id,"available",v)} type="number" mono />
+                      </span>
+                    </td>
+                    <TD><EditCell value={r.lastUpdated} onChange={v => upd(outfitStock,sOut,r.id,"lastUpdated",v)} /></TD>
+                    <TD muted mw={150}><EditCell value={r.remarks} onChange={v => upd(outfitStock,sOut,r.id,"remarks",v)} /></TD>
+                    <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(outfitStock,sOut,r.id)} /></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <AddBtn onClick={() => add(outfitStock,sOut,{type:"",design:"",sizes:"M, L",totalProduced:0,sold:0,available:0,lastUpdated:"",remarks:""})} label="Add Garment" />
+        </>}
+
+        {/* EXHIBIT NEEDS */}
+        {activeTab === "Exhibit Needs" && <>
+          <SectionTitle>EXHIBITION NEEDS</SectionTitle>
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: "0.65rem", letterSpacing: 2, color: C.textMuted, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>OVERALL READINESS</span>
+              <span style={{ fontSize: "0.8rem", color: C.accent, fontFamily: "'DM Serif Display',serif", fontWeight: 600 }}>{exhibitReady} / {exhibitNeeds.length}</span>
+            </div>
+            <div style={{ height: 6, background: C.border, borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${(exhibitReady/exhibitNeeds.length)*100}%`,
+                background: `linear-gradient(90deg,${C.accent},${C.accentLight})`,
+                borderRadius: 4, transition: "width 0.5s ease" }} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            {EXHIBIT_STATUS.map(s => {
+              const c = exhibitNeeds.filter(e => e.status === s).length;
+              const sc = STATUS_COLORS[s] || { color: C.textMid, border: C.border, bg: C.accentFaint };
+              return <div key={s} style={{ padding: "4px 12px", borderRadius: 20, fontSize: "0.68rem",
+                border: `1px solid ${sc.border}`, color: sc.color, background: sc.bg }}>{s}: <strong>{c}</strong></div>;
+            })}
+          </div>
+          <table style={tblStyle}>
+            <thead><tr>
+              <TH w={34}>#</TH><TH>Category</TH><TH>Item</TH><TH>Qty</TH><TH>Status</TH><TH w={28}></TH>
+            </tr></thead>
+            <tbody>
+              {filt(exhibitNeeds).map((r, i) => (
+                <tr key={r.id} className="hoe-row">
+                  <TD muted><span style={{ fontSize: "0.7rem" }}>{i+1}</span></TD>
+                  <td style={{ ...tdS, minWidth: 160 }}>
+                    <DropdownCell value={r.category}
+                      onChange={v => upd(exhibitNeeds,sExh,r.id,"category",v)}
+                      options={exhibitCats}
+                      onAddOption={v => setExhibitCats(p => [...p, v])}
+                      onRemoveOption={v => setExhibitCats(p => p.filter(x => x !== v))}
+                      placeholder="select category" />
+                  </td>
+                  <TD><EditCell value={r.item} onChange={v => upd(exhibitNeeds,sExh,r.id,"item",v)} /></TD>
+                  <TD mono><EditCell value={r.qty} onChange={v => upd(exhibitNeeds,sExh,r.id,"qty",v)} mono /></TD>
+                  <td style={tdS}><StatusPill value={r.status} onChange={v => upd(exhibitNeeds,sExh,r.id,"status",v)} options={EXHIBIT_STATUS} /></td>
+                  <td style={{ ...tdS, verticalAlign: "middle" }}><DelBtn onClick={() => del(exhibitNeeds,sExh,r.id)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <AddBtn onClick={() => add(exhibitNeeds,sExh,{category:"Tools",item:"",qty:"",status:"Not Ready"})} label="Add Item" />
+        </>}
+
+        {/* FOOTER */}
+        <div style={{ marginTop: 50, textAlign: "center", padding: "16px 0 0" }}>
+          <div style={{ height: 1, background: `linear-gradient(90deg,transparent,${C.accentLight},transparent)`, marginBottom: 12 }} />
+          <div style={{ fontSize: "0.52rem", letterSpacing: 4, color: C.textLight, fontFamily: "'DM Sans',sans-serif" }}>
+            ✦ HOUSE OF ENTREPRENAARI · DATA SAVED LOCALLY · CLICK ANY CELL TO EDIT ✦
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TEAM MEMBERS (email whitelist) ───────────────────────────────
+const TEAM = [
+  "ritvik@hoeentreprenaari.com",
+  "priyanka@hoeentreprenaari.com",
+  "prateek@hoeentreprenaari.com",
+  "anubhavi@hoeentreprenaari.com",
+  // add more team emails here
+];
+
+// ── LOGIN PAGE ────────────────────────────────────────────────────
+function LoginPage({ onLogin }) {
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [mode, setMode]         = useState("login"); // login | reset
+
+  const logoB64 = document.querySelector("img[alt='HOE Logo']")?.src || "";
+
+  const handleLogin = async () => {
+    setError(""); setLoading(true);
+    try {
+      await window.auth.signInWithEmailAndPassword(email.trim(), password);
+    } catch(e) {
+      setError(e.code === "auth/wrong-password" || e.code === "auth/user-not-found"
+        ? "Incorrect email or password."
+        : e.code === "auth/invalid-email"
+        ? "Please enter a valid email."
+        : "Login failed. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  const handleReset = async () => {
+    setError(""); setLoading(true);
+    try {
+      await window.auth.sendPasswordResetEmail(email.trim());
+      setError("✓ Reset link sent! Check your inbox.");
+      setMode("login");
+    } catch(e) {
+      setError("Could not send reset email. Check the address.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#1a0808 0%,#2d1010 60%,#1a0808 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ width: "100%", maxWidth: 400, animation: "fadeUp 0.5s ease both" }}>
+
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div style={{ display: "inline-block", background: "#fdf5f0", borderRadius: 12,
+            padding: "16px 28px", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "0.55rem", letterSpacing: 8,
+              color: "#1a1a1a", marginBottom: 6, textAlign: "center" }}>HOUSE</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
+              <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#8B1515",
+                display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 1.5, height: 10, background: "#fdf5f0", borderRadius: 2,
+                  transform: "rotate(-35deg)", marginTop: -2 }} />
+              </div>
+            </div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "0.42rem", letterSpacing: 5,
+              color: "#1a1a1a", marginTop: 6, textAlign: "center" }}>ENTREPRENAARI</div>
+          </div>
+          <div style={{ marginTop: 16, fontSize: "0.6rem", letterSpacing: 4,
+            color: "rgba(253,245,240,0.4)", fontFamily: "'DM Sans',sans-serif" }}>
+            ATELIER OPERATIONS DASHBOARD
+          </div>
+        </div>
+
+        {/* Card */}
+        <div style={{ background: "#fffcfc", borderRadius: 16, padding: "32px 32px 28px",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+          <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "#1e1414",
+            fontFamily: "'DM Sans',sans-serif", marginBottom: 6 }}>
+            {mode === "login" ? "Sign in" : "Reset password"}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "#9e7070", marginBottom: 24,
+            fontFamily: "'DM Sans',sans-serif" }}>
+            {mode === "login" ? "Team members only" : "Enter your email to receive a reset link"}
+          </div>
+
+          {/* Email */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#5a3030",
+              letterSpacing: 1, display: "block", marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>
+              EMAIL
+            </label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              onKeyDown={e => e.key === "Enter" && (mode === "login" ? handleLogin() : handleReset())}
+              style={{ width: "100%", padding: "11px 14px", border: "1.5px solid #ecddd8",
+                borderRadius: 8, fontSize: "0.85rem", fontFamily: "'DM Sans',sans-serif",
+                color: "#1e1414", background: "#fffaf8", outline: "none",
+                transition: "border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor = "#8B1515"}
+              onBlur={e => e.target.style.borderColor = "#ecddd8"} />
+          </div>
+
+          {/* Password */}
+          {mode === "login" && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: "0.68rem", fontWeight: 600, color: "#5a3030",
+                letterSpacing: 1, display: "block", marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>
+                PASSWORD
+              </label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                style={{ width: "100%", padding: "11px 14px", border: "1.5px solid #ecddd8",
+                  borderRadius: 8, fontSize: "0.85rem", fontFamily: "'DM Sans',sans-serif",
+                  color: "#1e1414", background: "#fffaf8", outline: "none",
+                  transition: "border-color 0.2s" }}
+                onFocus={e => e.target.style.borderColor = "#8B1515"}
+                onBlur={e => e.target.style.borderColor = "#ecddd8"} />
+            </div>
+          )}
+
+          {/* Error / success */}
+          {error && (
+            <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, fontSize: "0.78rem",
+              fontFamily: "'DM Sans',sans-serif",
+              background: error.startsWith("✓") ? "rgba(46,139,87,0.1)" : "rgba(192,57,43,0.1)",
+              color: error.startsWith("✓") ? "#2e8b57" : "#c0392b",
+              border: `1px solid ${error.startsWith("✓") ? "rgba(46,139,87,0.3)" : "rgba(192,57,43,0.3)"}` }}>
+              {error}
+            </div>
+          )}
+
+          {/* Submit button */}
+          <button onClick={mode === "login" ? handleLogin : handleReset}
+            disabled={loading || !email || (mode === "login" && !password)}
+            style={{ width: "100%", padding: "12px", background: "#8B1515",
+              color: "#fff", border: "none", borderRadius: 8, fontSize: "0.82rem",
+              fontWeight: 600, fontFamily: "'DM Sans',sans-serif", cursor: "pointer",
+              letterSpacing: 1, opacity: (loading || !email || (mode === "login" && !password)) ? 0.6 : 1,
+              transition: "opacity 0.2s, transform 0.1s" }}
+            onMouseEnter={e => { if (!loading) e.target.style.opacity = "0.85"; }}
+            onMouseLeave={e => { if (!loading) e.target.style.opacity = "1"; }}>
+            {loading ? "Please wait…" : mode === "login" ? "Sign In →" : "Send Reset Link"}
+          </button>
+
+          {/* Toggle */}
+          <div style={{ marginTop: 18, textAlign: "center" }}>
+            <span onClick={() => { setMode(mode === "login" ? "reset" : "login"); setError(""); }}
+              style={{ fontSize: "0.72rem", color: "#8B1515", cursor: "pointer",
+                fontFamily: "'DM Sans',sans-serif", fontWeight: 500 }}>
+              {mode === "login" ? "Forgot password?" : "← Back to sign in"}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 20, textAlign: "center", fontSize: "0.58rem",
+          color: "rgba(253,245,240,0.2)", fontFamily: "'DM Sans',sans-serif", letterSpacing: 2 }}>
+          HOUSE OF ENTREPRENAARI · INTERNAL USE ONLY
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── APP WRAPPER WITH AUTH ─────────────────────────────────────────
+function App() {
+  const [user, setUser]           = useState(null);
+  const [authChecked, setChecked] = useState(false);
+
+  useEffect(() => {
+    if (!window.firebaseReady || !window.auth) {
+      // No Firebase — skip auth, go straight to dashboard
+      setUser({ email: "local", displayName: "Local Mode" });
+      setChecked(true);
+      return;
+    }
+    const unsub = window.auth.onAuthStateChanged(u => {
+      setUser(u);
+      setChecked(true);
+    });
+    return () => unsub();
+  }, []);
+
+  if (!authChecked) return (
+    <div style={{ minHeight: "100vh", background: "#1a0808", display: "flex",
+      alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 40, height: 40, border: "3px solid #3a1010",
+        borderTop: "3px solid #8B1515", borderRadius: "50%",
+        animation: "spin 0.9s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  if (!user) return <LoginPage />;
+
+  return <HOEDashboard user={user} onSignOut={() => window.auth && window.auth.signOut()} />;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
